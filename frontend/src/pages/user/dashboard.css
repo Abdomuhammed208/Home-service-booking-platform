@@ -1,0 +1,15 @@
+.dashboard-container{
+    display: flex;
+    justify-content: space-around;
+    background: #24252A;
+}
+.dashboard-container button{
+    background-color:  #24252A; 
+    color: white;
+    transition: 0.3s ease;
+
+}
+.dashboard-container button:hover{
+    color: rgb(194, 172, 48);
+
+}
