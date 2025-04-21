@@ -234,19 +234,27 @@ app.post("/post/:id/delete", async function (req, res) {
 app.post("/delete-account", async function (req, res) {
   try {
     if (req.isAuthenticated()) {
-      const result = await db.query("DELETE FROM users WHERE email = $1", [req.user.email]);
-      const taskerResult = await db.query("DELETE FROM taskers WHERE email = $1", [req.user.email]);
-      req.session.destroy((err) => {
-        if (err) {
-          console.error("Error logging out:", err);
-        }
+      await db.query("DELETE FROM users WHERE email = $1", [req.user.email]);
+      await db.query("DELETE FROM taskers WHERE email = $1", [req.user.email]);
+
+      req.logout(() => {
+        req.session.destroy((err) => {
+          if (err) {
+            console.error("Error destroying session:", err);
+          }
+          res.clearCookie("connect.sid");
+          return res.json({ success: true, message: "Account deleted successfully" });
+        });
       });
-      res.redirect("/");
+    } else {
+      res.status(401).json({ success: false, message: "Unauthorized" });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
-})
+});
+
 
 
 
@@ -303,12 +311,18 @@ app.post("/tasker-submit", async function (req, res) {
 
 })
 
-app.get("/logout", (req, res) => {
+
+app.post("/logout", (req, res) => {
   req.logout(function (err) {
     if (err) {
-      return next(err);
+      console.error("Logout error:", err);
+      return res.status(500).json({ success: false, message: "Logout failed" });
     }
-    res.redirect("/");
+
+    req.session.destroy(); 
+    res.clearCookie("connect.sid"); 
+
+    return res.status(200).json({ success: true, message: "Logged out successfully" });
   });
 });
 
@@ -342,7 +356,7 @@ app.post("/login", (req, res, next) => {
     }
     if (!user) {
       console.log("Authentication failed:", info?.message);
-      return res.status(401).json({ success: false, message: info?.message || "Invalid email or password" });
+      return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
     req.logIn(user, (err) => {
@@ -358,31 +372,23 @@ app.post("/login", (req, res, next) => {
 
       return res.status(200).json({
         success: true,
-        message: "Login successful",
+        loginMessage: "Login successful, Hello " + name + "!",
         user: { name, email, mobile, money, city, role },
       });
     });
   })(req, res, next);
 }); 
 
+app.get("/profile", async function (req, res) {
+  if (req.isAuthenticated()) {
+    const result = await db.query("SELECT * FROM users WHERE email = $1", [req.user.email]);
+    const user = result.rows[0];
+    res.json({ success: true, user });
+  } else {
+    res.status(401).json({ success: false, message: "Not authenticated" });
+  }
+});
 
-
-// app.post("/login-admin", (req, res, next) => {
-//   console.log("Login attempt with email:", req.body.username);
-//   passport.authenticate("admin-local", (err, admin, info) => {
-//     if (!admin) {
-//       console.log("Authentication failed:");
-//       return res.redirect("/login-admin");
-//     }
-//     req.logIn(admin, (err) => {
-//       if (err) {
-//         console.error("Error logging in admin:", err);
-//         return res.status(500).send("An error occurred during login.");
-//       }
-//       return res.redirect("/admin");
-//     });
-//   })(req, res, next);
-// });
 
 app.post("/tasker-signup", async function (req, res) {
   const name = req.body.name;
@@ -390,6 +396,7 @@ app.post("/tasker-signup", async function (req, res) {
   const email = req.body.email;
   const city = req.body.city;
   const gender = req.body.gender;
+  const service = req.body.service;
   const password = req.body.password;
   console.log(req.body);
   try {
@@ -404,8 +411,8 @@ app.post("/tasker-signup", async function (req, res) {
             return res.status(500).json({ message: "Error hashing password" });
           } else {
             const result = await db.query(
-              "INSERT INTO taskers (name, mobile, email, city, gender, password, money) VALUES ($1, $2, $3, $4, $5, $6, DEFAULT) RETURNING *",
-              [name, mobile, email, city, gender,  hash]
+              "INSERT INTO taskers (name, mobile, email, city, gender, service, password, money) VALUES ($1, $2, $3, $4, $5, $6, $7, DEFAULT) RETURNING *",
+              [name, mobile, email, city, gender, service,  hash]
             );
             const user = result.rows[0];
             res.status(201).json({ message: "User registered successfully", user });

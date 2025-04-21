@@ -1,52 +1,60 @@
-// import React, { useState, useEffect } from "react";
-// import axios from "axios";
-// import { useLocation } from "react-router-dom";
+import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-// function Profile() {
-//   const location = useLocation();
-//   const user = location.state?.user;
-//   const [users, setUser] = useState(null);
-
-//   useEffect(() => {
-//     const fetchData = async () => {
-//       try {
-//         const response = await axios.get("http://localhost:3000/profile");
-//         if (response.data && response.data.users.length > 0) {
-//           setUser(response.data.users[0]);
-//           console.log(response.data);
-          
-//         }
-//       } catch (err) {
-//         console.error("Error fetching profile:", err);
-//       }
-//     };
-
-//     fetchData();
-//   }, []);
-
-//   return (
-//     <div>
-//       <h2>This is user's profile</h2>
-//       {user && 
-//         <div>
-//           {/* <h4 style={{color: "black"}} >Name: {user.name}</h4> */}
-//           {/* <h4 style={{color: "black"}} >Email: {user.email}</h4> */}
-//           <h1>Welcome, {user?.name || "User"}!</h1>
-//           <p>Your role: {user?.role}</p>
-//         </div>
-//       }
-//     </div>
-//   );
-// }
-
-// export default Profile;
-
-import React from "react";
-import { useLocation } from "react-router-dom";
 
 function Profile() {
-  const location = useLocation();
-  const user = location.state?.user;
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    fetch("http://localhost:3000/profile", {
+      method: "GET",
+      credentials: "include"
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Unauthorized");
+        return res.json();
+      })
+      .then((data) => {
+        setUser(data.user);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch user profile:", err);
+      });
+  }, []);
+
+  const handleLogout = async () =>{
+    try{
+       axios.post("http://localhost:3000/logout",{},{
+        withCredentials: true,
+      })
+      navigate("/login");
+    }catch(err){
+      console.log("Logout failed:", err);
+    }
+    
+  
+  }
+  const handleDelete = async ()=>{
+    const confirmDelete = window.confirm("Are you sure to delete this account?")
+    if(!confirmDelete) return;
+      try{
+        const response = await  axios.post("http://localhost:3000/delete-account",{},{
+          withCredentials: true,
+        })
+        if(response.data.success){
+          alert("The account has been deleted successfully")
+          navigate("/login")
+        }else{
+          alert(response.data.message || "Failed to delete account.");
+        }
+      }catch (error) {
+        console.error("Error deleting account:", error);
+        alert("An error occurred while deleting your account.");
+      }
+  }
+
 
   return (
     <div>
@@ -57,9 +65,11 @@ function Profile() {
           <h4 style={{ color: "black" }}>Email: {user.email}</h4>
           <h4 style={{ color: "black" }}>Mobile: {user.mobile}</h4>
           <h4 style={{ color: "black" }}>Your Balance: {user.money} RM</h4>
+          <button onClick={handleLogout}>Logout</button>
+          <button onClick={handleDelete}>Delete</button>
         </div>
       ) : (
-        <p>No user data passed.</p>
+        <p style={{ color: "black" }}>Loading profile...</p>
       )}
     </div>
   );

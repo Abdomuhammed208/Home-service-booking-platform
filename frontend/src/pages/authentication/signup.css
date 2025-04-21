@@ -154,3 +154,14 @@ button a {
     font-weight: bold;
     font-size: 15px;
 }
+.customer-registration-btn, .tasker-registration-btn{
+  margin-left: 50px;
+  margin-bottom: 15px;
+  background-color: #3a3a3a;
+  border-radius: 10px;
+  color: white;
+transition: 0.3s ease;
+}
+.customer-registration-btn:hover, .tasker-registration-btn:hover{
+  background-color:rgb(129, 128, 128);
+}

@@ -1,9 +1,11 @@
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate,useLocation } from "react-router-dom";
 import { useState } from "react";
 import './login.css';
 
 const Login = () => {
+  const location = useLocation();
+  const succefulMessage = location.state?.message;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,20 +22,24 @@ const Login = () => {
         }
       );
       const user = response.data.user;
-      console.log(user);
+      const loginMessage = response.data.loginMessage;
+      console.log(response.data.message);
       console.log(user.role);
-
       if (user.role === "user") {
-        navigate("/dashboard", { state: { user: user } });
+        navigate("/dashboard", { state: {loginMessage: loginMessage }});
       } else if (user.role === "tasker") {
-        navigate("/tasker-dashboard", { state: { user: user } });
+        navigate("/tasker-dashboard", { state: {loginMessage: loginMessage}  } );
       } else if (user.role === "admin") {
         navigate("/admin");
       } else {
         setError("Unknown role");
       }
     } catch (error) {
-      setError(error.message)
+      if (error.response && error.response.data && error.response.data.message) {
+        setError(error.response.data.message); 
+      } else {
+        setError("An error occurred during login.");
+      }
     }
   }
 
@@ -48,7 +54,7 @@ const Login = () => {
       </div>
     </nav>
   </header>
-
+  {succefulMessage && <p style={{ color: "green" }}>{succefulMessage}</p>}
     <form className="login-form" onSubmit={handleLogin}>
       <div className="container">
         <div className="login-container">

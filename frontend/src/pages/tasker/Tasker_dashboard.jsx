@@ -5,8 +5,10 @@ import { useLocation } from "react-router-dom";
 function Taskerdashboard(){
     const location = useLocation();
     const user = location.state?.user;
+    const message = location.state?.loginMessage;
 
     return <div>
+        {message && <p style={{ color: "green" }}>{message}</p>}
         <p style={{color: "black"}}>This is Tasker's dashboard</p>
         <h4 style={{ color: "black" }}>Name: {user.name}</h4>
           <h4 style={{ color: "black" }}>Email: {user.email}</h4>
