@@ -1,0 +1,71 @@
+import React, { useState } from 'react';
+import SwitchUser from './SwitchUser';
+
+function CustomerForm({ setUserType }) {
+    const [message, setMessage] = useState();
+    const [formData, setFormData] = useState({
+        name: "",
+        email: "",
+        mobile: "",
+        password: "",
+    });
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setMessage("");
+
+        const response = await fetch("http://localhost:3000/signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formData),
+        });
+
+        const data = await response.json();
+        try {
+            if (!response.ok) {
+                setMessage(data.message || "Something went wrong.");
+            } else {
+                setMessage(data.message);
+                setFormData({ name: "", email: "", mobile: "", password: "" });
+            }
+        } catch (err) {
+            console.error("Frontend error:", err);
+            setMessage("Could not connect to the server.");
+        }
+    };
+
+    return (
+        <div className="container">
+            <div className="signup-container">
+                <h1 className="form-title">Sign up</h1>
+                <SwitchUser setUserType={setUserType} />
+                <form className="signup-form" onSubmit={handleSubmit}>
+                    <div className="input-wrapper">
+                        <input className="input-field" placeholder="Name" type="text" onChange={handleChange} name="name" required />
+                    </div>
+                    <div className="input-wrapper">
+                        <input className="input-field" placeholder="Mobile no." type="text" onChange={handleChange} name="mobile" required />
+                    </div>
+                    <div className="input-wrapper">
+                        <input className="input-field" placeholder="Email" type="email" onChange={handleChange} name="email" required />
+                    </div>
+                    <div className="input-wrapper">
+                        <input className="input-field" placeholder="Password" type="password" onChange={handleChange} name="password" required />
+                    </div>
+                    {message && <p style={{ color: 'red' }}>{message}</p>}
+                    <button className="signup-button" type="submit">Sign up</button>
+                </form>
+                <p className="sign-up-text">
+                    I have an account?
+                    <a href="/login"> Login</a>
+                </p>
+            </div>
+        </div>
+    );
+}
+
+export default CustomerForm;

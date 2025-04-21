@@ -1,6 +1,7 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import NotFound from "../../components/Notfound";
 
 
 function Profile() {
@@ -58,9 +59,9 @@ function Profile() {
 
   return (
     <div>
-      <h2>This is user's profile</h2>
       {user ? (
         <div>
+           <h2>This is user's profile</h2>
           <h4 style={{ color: "black" }}>Name: {user.name}</h4>
           <h4 style={{ color: "black" }}>Email: {user.email}</h4>
           <h4 style={{ color: "black" }}>Mobile: {user.mobile}</h4>
@@ -69,7 +70,8 @@ function Profile() {
           <button onClick={handleDelete}>Delete</button>
         </div>
       ) : (
-        <p style={{ color: "black" }}>Loading profile...</p>
+        // <p style={{ color: "black" }}>Loading profile...</p>
+        <NotFound />
       )}
     </div>
   );

@@ -1,10 +1,18 @@
-import React  from "react";
+import { useEffect, useState } from 'react';
 import './dashboard.css';
-import {  useLocation } from "react-router-dom";
+import {  useLocation, useNavigate } from "react-router-dom";
 
 function Dashboard(){
     const location = useLocation();
-    const message = location.state?.loginMessage;
+    const navigate = useNavigate();
+    const successfulMessage = location.state?.loginMessage;
+    const [message, setMessage] = useState('');
+    useEffect(()=>{
+        if(successfulMessage){
+            setMessage(successfulMessage);
+            navigate(location.pathname,{replace: true})
+        }
+    },[location, navigate, successfulMessage])
     return <div>
      <div className="dashboard-container">
         <p >This is user dashboard</p>
