@@ -12,28 +12,58 @@ function TaskerForm({ setUserType }) {
         gender: "",
         service: ""
     });
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState(null);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setSelectedImage(file);
+            setPreviewUrl(URL.createObjectURL(file));
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage("");
 
-        const response = await fetch("http://localhost:3000/tasker-signup", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData),
-        });
-
-        const data = await response.json();
         try {
+            const formDataToSend = new FormData();
+            // Append all form fields
+            Object.keys(formData).forEach(key => {
+                formDataToSend.append(key, formData[key]);
+            });
+            
+            // Append the image if selected
+            if (selectedImage) {
+                formDataToSend.append('profile_image', selectedImage);
+            }
+
+            const response = await fetch("http://localhost:3000/tasker-signup", {
+                method: "POST",
+                body: formDataToSend,
+            });
+
+            const data = await response.json();
             if (!response.ok) {
                 setMessage(data.message || "Something went wrong.");
             } else {
                 setMessage(data.message);
-                setFormData({ name: "", email: "", mobile: "", password: "", city: "", gender: "", service: "" });
+                setFormData({ 
+                    name: "", 
+                    email: "", 
+                    mobile: "", 
+                    password: "", 
+                    city: "", 
+                    gender: "", 
+                    service: "" 
+                });
+                setSelectedImage(null);
+                setPreviewUrl(null);
             }
         } catch (err) {
             console.error("Frontend error:", err);
@@ -47,6 +77,24 @@ function TaskerForm({ setUserType }) {
                 <h1 className="form-title">Sign up</h1>
                 <SwitchUser setUserType={setUserType} />
                 <form className="signup-form" onSubmit={handleSubmit}>
+                    <div className="profile-image-upload">
+                        {previewUrl && (
+                            <div className="image-preview">
+                                <img src={previewUrl} alt="Profile preview" />
+                            </div>
+                        )}
+                        <div className="input-wrapper">
+                            <label className="file-input-label">
+                                {selectedImage ? 'Change Profile Picture' : 'Upload Profile Picture'}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                    className="file-input"
+                                />
+                            </label>
+                        </div>
+                    </div>
                     <div className="input-wrapper">
                         <input className="input-field" placeholder="Name" type="text" onChange={handleChange} name="name" required />
                     </div>

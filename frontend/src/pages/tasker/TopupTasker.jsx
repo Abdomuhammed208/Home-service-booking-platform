@@ -2,18 +2,17 @@ import React, { useState } from "react";
 import './top-up.css'
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-function Topup() {
+function TopupTasker() {
     const [amount, setAmount] = useState('')
     const [error, setError] = useState('')
     const navigate = useNavigate()
     const handleSubmit = (e) =>{
         e.preventDefault();
         if(amount > 0){
-            axios.post("http://localhost:3000/top-up", {amount},{
+            axios.post("http://localhost:3000/top-up-tasker", {amount},{
                 withCredentials: true,
             })
-            
-            navigate("/profile");
+            navigate("/tasker-dashboard");
         }else{
             setError("Invalid Amount")
         }
@@ -41,4 +40,4 @@ function Topup() {
         </div>
     </div>
 }
-export default Topup;
+export default TopupTasker;

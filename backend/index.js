@@ -6,10 +6,38 @@ import passport from "passport";
 import { Strategy } from "passport-local";
 import session from "express-session";
 import cors from 'cors';
+import multer from 'multer';
+import path from 'path';
 
 const app = express();
 const port = 3000;
 const saltRounds = 10;
+
+
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'public/uploads/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5000000 }, 
+  fileFilter: function (req, file, cb) {
+    const filetypes = /jpeg|jpg|png/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error("Only .png, .jpg and .jpeg format allowed!"));
+  }
+});
 
 app.use(
   session({
@@ -17,9 +45,9 @@ app.use(
     resave: true,
     saveUninitialized: true,
     cookie: { 
-      secure: false, // true if using HTTPS
+      secure: false, 
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: 24 * 60 * 60 * 1000 
     }
   })
 );
@@ -29,12 +57,13 @@ app.use(express.static("public"));
 app.set('view engine', 'ejs');
 app.use(passport.initialize());
 app.use(passport.session());
- //app.use(cors());
- app.use(cors({
-  origin: "http://localhost:3001", // React frontend
-  credentials: true,  // Important for cookies or session sharing
+app.use(cors({
+  origin: "http://localhost:3001", 
+  credentials: true, 
 }));
 app.use(express.json());
+
+app.use('/uploads', express.static('public/uploads'));
 
 const db = new pg.Client({
   user: "postgres",
@@ -50,29 +79,25 @@ app.get("/", (req, res) => {
 
 app.get("/user", async function (req, res) {
   const result = await db.query("SELECT * FROM posts");
-  const posts = result.rows;
-  if (posts ) {
-    res.render("user.ejs", { posts: posts });
+  const posts = result.rows[0 ];
+  if (posts && posts.length > 0) {
+    res.json({ posts });
   } else {
-    res.render("user.ejs", { posts: null });
+    res.json({ Message: "There is no posts" });
   }
 });
+
+
+
 app.get("/tasker", async function (req, res) {
   const result = await db.query("SELECT * FROM posts");
   const posts = result.rows;
-  if (posts) {
-    res.render("tasker.ejs", { posts: posts, currentUser: req.user.id  });
+  console.log("Fetched posts:", posts);
+  if (posts && posts.length > 0) {
+    res.json({ posts });
   } else {
-    res.render("tasker.ejs", { posts: null });
+    res.json({ posts: [], message: "No posts found" });
   }
-});
-
-app.get("/register", (req, res) => {
-  res.render("register.ejs");
-});
-
-app.get("/transfer", (req, res) => {
-  res.render("transfer.ejs");
 });
 
 app.post("/transfer",async function (req, res) {
@@ -94,43 +119,38 @@ app.post("/transfer",async function (req, res) {
 
 
 // <-------------------------------TOP UP-------------------------------->
-
-app.get("/top-up", (req, res) => {
-  res.render("top-up.ejs");
-})
-app.get("/top-up-tasker", (req, res) => {
-  res.render("top-up-tasker.ejs");
-})
 app.post("/top-up", async function (req, res) {
   try {
-    const submittedMoney = parseInt(req.body.money);
-    const userResult = await db.query("SELECT money FROM users WHERE email = $1",
-      [req.user.email]);
+      const submittedMoney = parseInt(req.body.amount);
+    
+      const userResult = await db.query("SELECT money FROM users WHERE email = $1",
+        [req.user.email]);
+  
+      const currentBalance = userResult.rows[0];
+      const money = parseInt(currentBalance.money) + parseInt(submittedMoney) || 0;
+  
+      const topUpResult = await db.query("UPDATE users SET money = $1 WHERE email = $2",
+        [money, req.user.email]
+      )
+      
+      res.json({message: "Your balance has been updated successfully"})
 
-    const currentBalance = userResult.rows[0];
-    const money = parseInt(currentBalance.money) + parseInt(submittedMoney) || 0;
 
-    const topUpResult = await db.query("UPDATE users SET money = $1 WHERE email = $2",
-      [money, req.user.email]
-    )
-    res.redirect("/profile");
   } catch (err) {
     console.log(err)
   }
 });
+
 app.post("/top-up-tasker", async function (req, res) {
   try {
-    const submittedMoney = parseInt(req.body.money);
+    const submittedMoney = parseInt(req.body.amount);    
     const result = await db.query("SELECT money FROM taskers WHERE email = $1",
       [req.user.email]);
-
     const currentBalance = result.rows[0];
     const money = parseInt(currentBalance.money) + parseInt(submittedMoney);
-
     const topUpResult = await db.query("UPDATE taskers SET money = $1 WHERE email = $2",
       [money, req.user.email]
     )
-    res.redirect("/tasker-profile");
   } catch (err) {
     console.log(err)
   }
@@ -159,6 +179,8 @@ res.render("post.ejs")
 // });
 
 
+
+
 app.post("/post", async function (req, res) {
   if (!req.user || !req.user.id) {
     return res.status(400).send("User is not logged in.");
@@ -176,8 +198,6 @@ app.post("/post", async function (req, res) {
     const result = await db.query("INSERT INTO posts (content, tasker_id, tasker_name) VALUES ($1, $2, $3) RETURNING id",
       [submittedPost, taskerId, taskerName]);
     const post = result.rows[0];
-    res.redirect("/tasker")
-
   } catch (err) {
     console.log(err)
   }
@@ -201,35 +221,79 @@ app.get("/tasker/:postId", async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
-app.get("/post/:id/edit",async function (req,res) {
+app.get("/post/:id/edit", async function (req,res) {
+    if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
     const id = req.params.id;
-    const result = await db.query("SELECT id FROM posts WHERE id = $1", [id]);
-    const post = result.rows;
-    console.log(post)
-    res.render("edit-post.ejs", {post: post});
+    const taskerId = req.user.id;
+    
+    const result = await db.query(
+        "SELECT * FROM posts WHERE id = $1 AND tasker_id = $2", 
+        [id, taskerId]
+    );
+    
+    if (result.rows.length === 0) {
+        return res.status(403).json({ error: "Not authorized to edit this post" });
+    }
+    
+    const post = result.rows[0];
+    res.json({post});
 });
 
 app.post("/post/:id/edit", async function (req, res) {
-  const id = req.params.id;
-  const submittedPost = req.body.post;
-  const userId = req.user.id;
-  console.log(parseInt(id))
-  const result = await db.query("SELECT content FROM posts WHERE id = $1 AND tasker_id = $2 ", [id, userId]);
-  const currentData = result.rows[0]; 
-  console.log("The current post: " + currentData);
-  const updatePost = submittedPost || currentData;
-  console.log("New post: " + updatePost);
-  if (submittedPost) {
-      const updateResult = await db.query("UPDATE posts SET content = $1 WHERE id = $2 AND tasker_id = $3", [submittedPost, id, userId]);
-  }
-  res.redirect("/tasker");
-});
+    if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+    
+    //const id = req.params.id;
+    const submittedPost = req.body.post;
+    const taskerId = req.user.id;
+    
+    const checkResult = await db.query(
+        "SELECT * FROM posts WHERE id = $1 AND tasker_id = $2",
+        [id, taskerId]
+    );
+    
+    if (checkResult.rows.length === 0) {
+        return res.status(403).json({ error: "Not authorized to edit this post" });
+    }
+    
+    if (submittedPost) {
+        await db.query(
+            "UPDATE posts SET content = $1 WHERE id = $2 AND tasker_id = $3",
+            [submittedPost, id, taskerId]
+        );
+    }
+    });
+
+
+
 app.post("/post/:id/delete", async function (req, res) {
-  const id = req.params.id;
-  const userId = req.user.id;
-  const updateResult = await db.query("DELETE FROM posts WHERE id = $1 AND tasker_id = $2", [id, userId]);
-  res.redirect("/tasker");
-});
+    if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+    
+    const id = req.params.id;
+    const taskerId = req.user.id;
+        const checkResult = await db.query(
+        "SELECT * FROM posts WHERE id = $1 AND tasker_id = $2",
+        [id, taskerId]
+    );
+    
+    if (checkResult.rows.length === 0) {
+        return res.status(403).json({ error: "Not authorized to delete this post" });
+    }
+    
+    await db.query(
+        "DELETE FROM posts WHERE id = $1 AND tasker_id = $2",
+        [id, taskerId]
+    );
+  });
+
+
+
+
 
 app.post("/delete-account", async function (req, res) {
   try {
@@ -255,23 +319,16 @@ app.post("/delete-account", async function (req, res) {
   }
 });
 
-
-
-
-
 app.get("/tasker-profile", async function (req, res) {
   if (req.isAuthenticated()) {
+    console.log(req.user.email);
+    
     const result = await db.query("SELECT * FROM taskers WHERE email = $1",
       [req.user.email]);
-
-    const taskers = result.rows;
-    if (taskers) {
-      res.render("tasker-profile.ejs", { taskers: taskers });
-    } else {
-      res.render("tasker-profile.ejs", { name: "there is name", mobile: mobile, email: email, city: city, type: type });
-    }
+    const tasker = result.rows[0];
+      res.json({ success: true, tasker });
   } else {
-    res.redirect("/login");
+    res.json({ success:false, message: "Not authenticated" });
   }
 
 });
@@ -372,7 +429,7 @@ app.post("/login", (req, res, next) => {
 
       return res.status(200).json({
         success: true,
-        loginMessage: "Login successful, Hello " + name + "!",
+        loginMessage: "Login successful, Hello !",
         user: { name, email, mobile, money, city, role },
       });
     });
@@ -380,75 +437,109 @@ app.post("/login", (req, res, next) => {
 }); 
 
 app.get("/profile", async function (req, res) {
-  if (req.isAuthenticated()) {
-    const result = await db.query("SELECT * FROM users WHERE email = $1", [req.user.email]);
-    const user = result.rows[0];
-    res.json({ success: true, user });
-  } else {
-    res.status(401).json({ success: false, message: "Not authenticated" });
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    
+    const result = await db.query(
+      "SELECT id, name, email, mobile, money, profile_image FROM users WHERE email = $1",
+      [req.user.email]
+    );
+    
+    if (result.rows.length > 0) {
+      const user = result.rows[0];
+      res.json({ user });
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-
-app.post("/tasker-signup", async function (req, res) {
-  const name = req.body.name;
-  const mobile = req.body.mobile;
-  const email = req.body.email;
-  const city = req.body.city;
-  const gender = req.body.gender;
-  const service = req.body.service;
-  const password = req.body.password;
-  console.log(req.body);
+// Add profile image upload route
+app.post("/upload-profile-image", upload.single('profile_image'), async function (req, res) {
   try {
-    const checkResult = await db.query("SELECT * FROM taskers WHERE email = $1",
-      [email]);
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
 
-      if (checkResult.rows.length > 0) {
-        return res.status(400).json({ message: "Email already in use" });
-      } else {
-        bcrypt.hash(password, saltRounds, async (err, hash) => {
-          if (err) {
-            return res.status(500).json({ message: "Error hashing password" });
-          } else {
-            const result = await db.query(
-              "INSERT INTO taskers (name, mobile, email, city, gender, service, password, money) VALUES ($1, $2, $3, $4, $5, $6, $7, DEFAULT) RETURNING *",
-              [name, mobile, email, city, gender, service,  hash]
-            );
-            const user = result.rows[0];
-            res.status(201).json({ message: "User registered successfully", user });
-          }
-        });
-      }
-  } catch (err) {
-    console.log(err)
+    const imagePath = `/uploads/${req.file.filename}`;
+    
+    await db.query(
+      "UPDATE users SET profile_image = $1 WHERE email = $2",
+      [imagePath, req.user.email]
+    );
+
+    res.json({ 
+      success: true, 
+      message: "Profile image updated successfully",
+      image_url: imagePath 
+    });
+  } catch (error) {
+    console.error("Error uploading profile image:", error);
+    res.status(500).json({ error: "Failed to upload image" });
   }
 });
 
-
-app.post("/signup", async (req, res) => {
-const {name, mobile, email, password} = req.body;
+app.post("/tasker-signup", upload.single('profile_image'), async function (req, res) {
   try {
-    const checkResult = await db.query("SELECT * FROM users WHERE email = $1", [
-      email,
-    ]);
+    const email = req.body.email;
+    const password = req.body.password;
+    const name = req.body.name;
+    const mobile = req.body.mobile;
+    const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+
+    // Check if user already exists
+    const checkResult = await db.query("SELECT * FROM taskers WHERE email = $1", [email]);
+    if (checkResult.rows.length > 0) {
+      return res.status(400).json({ error: "Email already registered" });
+    }
+
+    const hash = await bcrypt.hash(password, saltRounds);
+    
+    const result = await db.query(
+      "INSERT INTO taskers (email, password, name, mobile, profile_image, money) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+      [email, hash, name, mobile, imagePath, 0]
+    );
+
+    res.json({ success: true, message: "Tasker registered successfully" });
+  } catch (error) {
+    console.error("Error in tasker signup:", error);
+    res.status(500).json({ error: "Registration failed" });
+  }
+});
+
+app.post("/signup", upload.single('profile_image'), async (req, res) => {
+  try {
+    const { name, mobile, email, password } = req.body;
+    const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+
+    // Check if user already exists
+    const checkResult = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+    
     if (checkResult.rows.length > 0) {
       return res.status(400).json({ message: "Email already in use" });
-    } else {
-      bcrypt.hash(password, saltRounds, async (err, hash) => {
-        if (err) {
-          return res.status(500).json({ message: "Error hashing password" });
-        } else {
-          const result = await db.query(
-            "INSERT INTO users (name, mobile, email, password, money) VALUES ($1, $2, $3, $4, DEFAULT) RETURNING *",
-            [name, mobile, email, hash]
-          );
-          const user = result.rows[0];
-          res.status(201).json({ message: "User registered successfully", user });
-        }
-      });
     }
+
+    // Hash password and create user
+    const hash = await bcrypt.hash(password, saltRounds);
+    const result = await db.query(
+      "INSERT INTO users (name, mobile, email, password, money, profile_image) VALUES ($1, $2, $3, $4, DEFAULT, $5) RETURNING *",
+      [name, mobile, email, hash, imagePath]
+    );
+
+    const user = result.rows[0];
+    res.status(201).json({ message: "User registered successfully", user });
   } catch (err) {
-    console.log(err);
+    console.error("Signup error:", err);
+    res.status(500).json({ message: "Error during registration" });
   }
 });
 
@@ -459,7 +550,8 @@ app.post("/submit", async function (req, res) {
   const submittedName = req.body.name;
   const submittedMobileNum = req.body.mobile;
   const submittedEmail = req.body.email;
-
+  console.log(req.body);
+  console.log(req.user.email);
   try {
 
     const userResult = await db.query("SELECT * FROM users WHERE email = $1", [req.user.email]);
@@ -474,8 +566,10 @@ app.post("/submit", async function (req, res) {
       [nameToUpdate, mobileToUpdate, emailToUpdate, req.user.email]
     );
     req.user.email = emailToUpdate;
+    console.log("This is email of the profile: ", req.user.email);
 
-    res.redirect("/profile");
+
+    res.json({ ok: true, message: "All data have beebn changed" });
   } catch (err) {
     console.log(err);
     res.status(500).send("An error occurred while updating the user data.");
@@ -546,6 +640,36 @@ passport.deserializeUser(async (user, done) => {
     done(err);
   }
 });
+
+// Add tasker profile image upload route
+app.post("/upload-tasker-image", upload.single('profile_image'), async function (req, res) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const imagePath = `/uploads/${req.file.filename}`;
+    
+    await db.query(
+      "UPDATE taskers SET profile_image = $1 WHERE email = $2",
+      [imagePath, req.user.email]
+    );
+
+    res.json({ 
+      success: true, 
+      message: "Profile image updated successfully",
+      image_url: imagePath 
+    });
+  } catch (error) {
+    console.error("Error uploading profile image:", error);
+    res.status(500).json({ error: "Failed to upload image" });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
