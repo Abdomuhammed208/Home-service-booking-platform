@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import SwitchUser from './SwitchUser';
-
+import { useNavigate } from 'react-router-dom';
+import './signup.css';
 function CustomerForm({ setUserType }) {
+    const navigate = useNavigate();
     const [message, setMessage] = useState();
     const [formData, setFormData] = useState({
         name: "",
@@ -51,6 +53,7 @@ function CustomerForm({ setUserType }) {
                 setFormData({ name: "", email: "", mobile: "", password: "" });
                 setSelectedImage(null);
                 setPreviewUrl(null);
+                navigate("/login");
             }
         } catch (err) {
             console.error("Frontend error:", err);

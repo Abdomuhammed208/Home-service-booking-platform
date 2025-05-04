@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import SwitchUser from './SwitchUser';
-
+import { useNavigate } from 'react-router-dom';
 function TaskerForm({ setUserType }) {
+    const navigate = useNavigate();
     const [message, setMessage] = useState();
     const [formData, setFormData] = useState({
         name: "",
@@ -62,6 +63,7 @@ function TaskerForm({ setUserType }) {
                     gender: "", 
                     service: "" 
                 });
+                navigate("/login");
                 setSelectedImage(null);
                 setPreviewUrl(null);
             }

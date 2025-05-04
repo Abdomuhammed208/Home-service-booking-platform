@@ -19,9 +19,14 @@ function Heading(){
 				<li><a href="/">Contact</a></li>
 
 			</ul>
+
             <button onClick={()=>{
 				navigate('/login')
-			}}>Login / Signup</button>
+			}}>Login</button>
+			 <button onClick={()=>{
+				navigate('/signup')
+			}}>Signup</button>
+
 		</div>
 	</nav>
     </header>

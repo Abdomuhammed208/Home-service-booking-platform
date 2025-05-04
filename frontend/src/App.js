@@ -13,6 +13,7 @@ import EditProfile from './pages/user/EditProfile.jsx';
 import TopupTasker from './pages/tasker/TopupTasker.jsx';
 import TaskerProfile from './pages/tasker/TaskerProfile.jsx';
 import NewPost from './pages/posts/NewPost.jsx';
+import EditPost from './pages/posts/EditPost.jsx';
 function App() {
 
   return (
@@ -32,6 +33,7 @@ function App() {
      <Route path='/notfound' element={<NotFound/>}/>
      <Route path='/tasker-profile' element={<TaskerProfile/>}/>
      <Route path='/new-post' element={<NewPost/>}/>
+     <Route path='/post/:id/edit' element={<EditPost/>}/>
      </Routes>
      </BrowserRouter>
     

@@ -1,81 +1,147 @@
+import { useEffect, useState } from "react";
 import axios from "axios";
-import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import "./EditProfile.css";
 
 const EditProfile = () => {
-    const navigate  = useNavigate();
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const [formData, setFormData] = useState({
+        name: "",
+        mobile: "",
+        email: "",
+    });
 
-  const [formData, setFormData] = useState({
-    name: "",
-    mobile: "",
-    email: "",
-  });
-  const [error, setError] = useState();
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const response = await axios.get("http://localhost:3000/profile", {
+                    withCredentials: true
+                });
+                if (response.data.user) {
+                    setFormData({
+                        name: response.data.user.name || "",
+                        mobile: response.data.user.mobile || "",
+                        email: response.data.user.email || "",
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching user data:", error);
+                setError("Failed to load profile data");
+            } finally {
+                setLoading(false);
+            }
+        };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+        fetchUserData();
+    }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try{await axios.post("http://localhost:3000/submit",formData, {
-            withCredentials: true,
-        });
-        navigate("/profile");
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
 
-    }catch(error){
-        setError("Error ocurred: ", error)
-    } 
-  };
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSuccess('');
 
-  return (
-    <div className="container mx-auto p-4">
-      <div className="bg-gray-100 p-6 rounded-lg shadow-md text-center">
-        <h1 className="text-3xl font-bold mb-6">Edit Profile</h1>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <input
-              type="text"
-              name="name"
-              placeholder="Enter your name"
-              className="form-control w-full text-center p-2 border border-gray-300 rounded"
-              value={formData.name}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-4">
-            <input
-              type="text"
-              name="mobile"
-              placeholder="Enter new mobile number"
-              className="form-control w-full text-center p-2 border border-gray-300 rounded"
-              value={formData.mobile}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-4">
-            <input
-              type="text"
-              name="email"
-              placeholder="Enter new email"
-              className="form-control w-full text-center p-2 border border-gray-300 rounded"
-              value={formData.email}
-              onChange={handleChange}
-            />
-          </div>
-          <button
-            type="submit"
-            className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
-          >
-            Submit
-          </button>
-          {error && <p style={{color: "red"}}>{error}</p>}
-        </form>
-      </div>
-    </div>
-  );
+        try {
+            const response = await axios.post(
+                "http://localhost:3000/submit",
+                formData,
+                { withCredentials: true }
+            );
+
+            if (response.data.ok) {
+                setSuccess("Profile updated successfully!");
+                setTimeout(() => {
+                    navigate("/profile");
+                }, 2000);
+            } else {
+                setError(response.data.message || "Failed to update profile");
+            }
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            setError("Failed to update profile. Please try again.");
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="container">
+                <div className="login-container">
+                    <div className="loading-message">Loading profile data...</div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="container">
+            <div className="login-container">
+                <h1 className="form-title">Edit Profile</h1>
+                {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
+                {success && <p style={{ color: 'green', textAlign: 'center' }}>{success}</p>}
+                
+                <form className="login-form" onSubmit={handleSubmit}>
+                    <div className="input-wrapper">
+                        <input
+                            className="input-field"
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            placeholder="Enter your name"
+                            required
+                        />
+                        <span className="material-symbols-outlined">person</span>
+                    </div>
+
+                    <div className="input-wrapper">
+                        <input
+                            className="input-field"
+                            type="tel"
+                            name="mobile"
+                            value={formData.mobile}
+                            onChange={handleChange}
+                            placeholder="Enter your mobile number"
+                            required
+                        />
+                        <span className="material-symbols-outlined">phone</span>
+                    </div>
+
+                    <div className="input-wrapper">
+                        <input
+                            className="input-field"
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            placeholder="Enter your email"
+                            required
+                        />
+                        <span className="material-symbols-outlined">mail</span>
+                    </div>
+
+                    <button className="login-button" type="submit">Save Changes</button>
+                    <button 
+                        className="login-button" 
+                        type="button"
+                        onClick={() => navigate("/profile")}
+                        style={{ marginTop: '10px', backgroundColor: '#dc3545' }}
+                    >
+                        Cancel
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
 };
 
 export default EditProfile;

@@ -8,6 +8,7 @@ import session from "express-session";
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
+import { log } from "console";
 
 const app = express();
 const port = 3000;
@@ -79,14 +80,14 @@ app.get("/", (req, res) => {
 
 app.get("/user", async function (req, res) {
   const result = await db.query("SELECT * FROM posts");
-  const posts = result.rows[0 ];
+  const posts = result.rows;
+  console.log("Fetched posts from user page: ", posts);
   if (posts && posts.length > 0) {
-    res.json({ posts });
+    res.json({ success: true, posts:posts });
   } else {
     res.json({ Message: "There is no posts" });
   }
 });
-
 
 
 app.get("/tasker", async function (req, res) {
@@ -245,11 +246,12 @@ app.post("/post/:id/edit", async function (req, res) {
     if (!req.isAuthenticated()) {
         return res.status(401).json({ error: "Unauthorized" });
     }
-    
-    //const id = req.params.id;
+    const id = req.params.id;
     const submittedPost = req.body.post;
     const taskerId = req.user.id;
-    
+    console.log("This is post id: " + req.params.id);
+    console.log("This is the post: " + req.body.post);
+
     const checkResult = await db.query(
         "SELECT * FROM posts WHERE id = $1 AND tasker_id = $2",
         [id, taskerId]
@@ -494,9 +496,18 @@ app.post("/tasker-signup", upload.single('profile_image'), async function (req, 
     const password = req.body.password;
     const name = req.body.name;
     const mobile = req.body.mobile;
+    const service = req.body.service;
+    const gender = req.body.gender;
+    const city = req.body.city;
+    console.log("Name: " + name);
+    console.log("Email: " + email);
+    console.log("Mobile: " + mobile);
+    console.log("Password: " + password);
+    console.log("Service: " + service);
+    console.log("Gender: " + gender);
+    console.log("City: " + city);
     const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
 
-    // Check if user already exists
     const checkResult = await db.query("SELECT * FROM taskers WHERE email = $1", [email]);
     if (checkResult.rows.length > 0) {
       return res.status(400).json({ error: "Email already registered" });
@@ -505,9 +516,10 @@ app.post("/tasker-signup", upload.single('profile_image'), async function (req, 
     const hash = await bcrypt.hash(password, saltRounds);
     
     const result = await db.query(
-      "INSERT INTO taskers (email, password, name, mobile, profile_image, money) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-      [email, hash, name, mobile, imagePath, 0]
+      "INSERT INTO taskers (email, password, name, mobile, profile_image, money, service, gender, city) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
+      [email, hash, name, mobile, imagePath, 0, service, gender, city]
     );
+    
 
     res.json({ success: true, message: "Tasker registered successfully" });
   } catch (error) {

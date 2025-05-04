@@ -2,14 +2,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "./tasker_dashboard.css";
 import axios from "axios";
+
 function Taskerdashboard() {
     const location = useLocation();
     const message = location.state?.loginMessage;
     const postMessage = location.state?.postMessage;
+    const deleteMessage = location.state?.deleteMessage;
     const navigate = useNavigate();
     const [posts, setPosts] = useState([]);
     const [currentTaskerId, setCurrentTaskerId] = useState(null);
-
     const toGoToNewpost = () => {
         navigate("/new-post");
     };
@@ -33,47 +34,37 @@ function Taskerdashboard() {
             .then(data => setPosts(data.posts))
             .catch(error => console.error('Error fetching posts:', error));
     }, []);
+    
     const handleDeletePost = (postId) => {
-        
-        axios.post(`http://localhost:3000/post/${postId}/delete`, {
-            credentials: 'include'
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    setPosts(posts.filter(post => post.id !== postId));
-                }
+        if (window.confirm('Are you sure you want to delete this post?')) {
+            axios.post(`http://localhost:3000/post/${postId}/delete`, {}, {
+                withCredentials: true
             })
-            .catch(error => console.error('Error deleting post:', error));
+                .then(response => {
+                    if (response.data.success) {
+                        
+                        setPosts(posts.filter(post => post.id !== postId));
+                        navigate("/tasker-dashboard", { state: { deleteMessage: "Post deleted successfully" } });
+                    }
+                })
+                .catch(error => console.error('Error deleting post:', error));
+        }
     };
-    const handleEditPost = (postId) => {
-        axios.post(`http://localhost:3000/post/${postId}/edit`, {
-            credentials: 'include'
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    setPosts(posts.filter(post => post.id !== postId));
-                }
-            })
-            .catch(error => console.error('Error editing post:', error));
-    };
+
 
     return (
         <div>
-
             <div className="dashboard-header">
                 <h1 className="dashboard-title">Tasker Dashboard</h1>
                 <a href="/tasker-profile" className="profile-link">View Profile</a>
             </div>
 
-            {(message || postMessage) && (
+            {(message || postMessage || deleteMessage) && (
                 <div className="success-message">
-                    {message || postMessage}
+                    {message || postMessage || deleteMessage}
                 </div>
             )}
             <div className="dashboard-container">
-
                 <div className="posts-grid">
                     {posts && posts.length > 0 ? (
                         posts.map((post) => (
@@ -82,20 +73,18 @@ function Taskerdashboard() {
                                 <p className="post-author">Posted by: {post.tasker_name}</p>
                                 {currentTaskerId === post.tasker_id && (
                                     <div className="post-actions">
-                                        <button onClick={() => handleEditPost(post.id)} className="edit-link">Edit</button>
-
-                                        <form
-                                            onClick={() => handleDeletePost(post.id)}
-                                            method="POST"
-                                            onSubmit={(e) => {
-                                                e.preventDefault();
-                                                if (window.confirm('Are you sure you want to delete this post?')) {
-                                                    e.target.submit();
-                                                }
-                                            }}
+                                        <button onClick={() => navigate(`/post/${post.id}/edit`, { 
+                                            state: { 
+                                                postId: post.id,
+                                                initialContent: post.content 
+                                            }
+                                        })} className="edit-link">Edit</button>
+                                        <button 
+                                            onClick={() => handleDeletePost(post.id)} 
+                                            className="delete-button"
                                         >
-                                            <button type="submit" className="delete-button">Delete</button>
-                                        </form>
+                                            Delete
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -115,5 +104,4 @@ function Taskerdashboard() {
         </div>
     );
 }
-
 export default Taskerdashboard;

@@ -1,44 +1,79 @@
 import { useEffect, useState } from 'react';
 import './dashboard.css';
-import {  useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
-function Dashboard(){
+function Dashboard() {
     const location = useLocation();
-    const navigate = useNavigate();
+    const message = location.state?.loginMessage;
+    //const navigate = useNavigate();
     const [posts, setPosts] = useState([]);
-    const successfulMessage = location.state?.loginMessage;
-    const [message, setMessage] = useState('');
-    useEffect(()=>{
-        if(successfulMessage){
-            setMessage(successfulMessage);
-            navigate(location.pathname,{replace: true})
-        }
-    },[location, navigate, successfulMessage])
-useEffect(()=>{
-fetch('http://localhost:3000/user')
-.then(response=>response.json())
-.then(data=>setPosts(data.posts))
-.catch(error=>console.error('Error fetching posts:', error))
-}, [])
-    return <div>
-     <div className="dashboard-container">
-        <p >This is user dashboard</p>
-        <a href="/profile"><p>view profile</p></a>        
-    </div>
-    {message && <p style={{ color: "green" }}>{message}</p>}
-    <div>
-        {posts && posts.length > 0 ? (
-            posts.map((post) => (
-                <div key={post.id}>
-                    <h1>{post.tasker_name}</h1>
-                    <p>{post.content}</p>
-                </div>
-            ))
-        ) : (
-            <p style={{color: "red"}}>No posts found</p>
-        )}
-    </div>
-    </div>
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
+    useEffect(() => {
+        const fetchPosts = async () => {
+            try {
+                const response = await fetch('http://localhost:3000/user', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                console.log("Received data:", data);
+                if (data.success) {
+                    setPosts(data.posts);
+                } else {
+                    setError(data.message || 'Failed to fetch posts');
+                }
+            } catch (error) {
+                console.error('Error fetching posts:', error);
+                setError('Failed to fetch posts. Please try again later.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPosts();
+    }, []);
+
+    return (
+        <div>
+            <div className="dashboard-header">
+                <h1 className="dashboard-title">User Dashboard</h1>
+                <a href="/profile" className="profile-link">View Profile</a>
+            </div>
+
+            {message && (
+                <div className="success-message">
+                    {message}
+                </div>
+            )}
+
+            {error && (
+                <div className="error-message">
+                    {error}
+                </div>
+            )}
+
+            <div className="dashboard-container">
+                <div className="posts-grid">
+                    {loading ? (
+                        <div className="loading-message">Loading posts...</div>
+                    ) : posts && posts.length > 0 ? (
+                        posts.map((post) => (
+                            <div key={post.id} className="post-card">
+                                <p className="post-content">{post.content}</p>
+                                <p className="post-author">Posted by: {post.tasker_name}</p>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="no-posts-message">
+                            <p>No posts found</p>
+                            <p>Check back later for new posts from taskers!</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 }
+
 export default Dashboard;
