@@ -3,7 +3,6 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: #5F41E4;
 }
 
 .login-container {
@@ -112,7 +111,6 @@
 }
 
 .login-container a {
-  color: #5F41E4;
   font-weight: 500;
   text-decoration: none;
 }

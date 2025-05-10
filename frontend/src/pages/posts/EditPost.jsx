@@ -75,6 +75,7 @@ const EditPost = () => {
             <button 
                 onClick={goToTaskerDashboard}
                 className="submit-button"
+
             >
                 Save Changes
             </button>

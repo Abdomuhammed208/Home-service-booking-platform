@@ -2,18 +2,21 @@ import React from 'react';
 import {BrowserRouter, Routes, Route } from "react-router-dom"
 import Login from './pages/authentication/Login.jsx';
 import Signup from './pages/authentication/Signup.jsx';
-import Topup from './pages/user/Topup.jsx';
+import Topup from './pages/customer/Topup.jsx';
 import Main from './pages/Main.jsx';
-import Profile from './pages/user/Profile.jsx';
-import Dashboard from './pages/user/Dashboard.jsx';
+import Profile from './pages/customer/Profile.jsx';
+import Dashboard from './pages/customer/Dashboard.jsx';
 import Taskerdashboard from './pages/tasker/Tasker_dashboard.jsx';
 import Admin from './pages/admin/Admin.jsx';
 import NotFound from './components/Notfound.jsx';
-import EditProfile from './pages/user/EditProfile.jsx';
+import EditProfile from './pages/customer/EditProfile.jsx';
 import TopupTasker from './pages/tasker/TopupTasker.jsx';
 import TaskerProfile from './pages/tasker/TaskerProfile.jsx';
 import NewPost from './pages/posts/NewPost.jsx';
 import EditPost from './pages/posts/EditPost.jsx';
+import EditProfileTasker from './pages/tasker/EditProfileTasker.jsx';
+import UserAccount from './pages/users/UserAccount.jsx';
+import Checkout from './pages/customer/Checkout.jsx';
 function App() {
 
   return (
@@ -34,6 +37,9 @@ function App() {
      <Route path='/tasker-profile' element={<TaskerProfile/>}/>
      <Route path='/new-post' element={<NewPost/>}/>
      <Route path='/post/:id/edit' element={<EditPost/>}/>
+     <Route path='/edit-profile-tasker' element={<EditProfileTasker/>}/>
+     <Route path='/tasker/:postId' element={<UserAccount/>}/>
+     <Route path='/checkout' element={<Checkout/>}/>
      </Routes>
      </BrowserRouter>
     

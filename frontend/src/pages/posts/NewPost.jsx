@@ -6,6 +6,8 @@ import './NewPost.css';
 const NewPost = () => {
     const navigate = useNavigate();
     const [post, setPost] = useState('');
+    const [title, setTitle] = useState('');
+    const [price, setPrice] = useState('');
     const [error, setError] = useState('');
 
     const handleSubmit = async (e) => {
@@ -17,7 +19,7 @@ const NewPost = () => {
 
         try {
             const response = await axios.post('http://localhost:3000/post', 
-                { post: post.trim() },
+                { post: post.trim(), title: title.trim(), price: price.trim() },
                 { withCredentials: true }
             );
 
@@ -42,14 +44,31 @@ const goToTaskerDashboard = () => {
             <h1>Create New Post</h1>
             {error && <div className="error-message">{error}</div>}
             <form onSubmit={handleSubmit}>
+            <div className="form-group">
+                    <input
+                        name="title"
+                        placeholder="Title"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        rows="4"
+                    />
+                </div>
                 <div className="form-group">
                     <textarea
                         name="post"
                         className="post-input"
-                        placeholder="What's on your mind?"
+                        placeholder="Content....."
                         value={post}
                         onChange={(e) => setPost(e.target.value)}
                         rows="4"
+                    />
+                </div>
+                <div className="form-group">
+                    <input
+                        name="price"
+                        placeholder="price"
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
                     />
                 </div>
                 <button onClick={goToTaskerDashboard} type="submit" className="submit-button">

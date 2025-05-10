@@ -34,7 +34,7 @@ function Taskerdashboard() {
             .then(data => setPosts(data.posts))
             .catch(error => console.error('Error fetching posts:', error));
     }, []);
-    
+
     const handleDeletePost = (postId) => {
         if (window.confirm('Are you sure you want to delete this post?')) {
             axios.post(`http://localhost:3000/post/${postId}/delete`, {}, {
@@ -42,7 +42,7 @@ function Taskerdashboard() {
             })
                 .then(response => {
                     if (response.data.success) {
-                        
+
                         setPosts(posts.filter(post => post.id !== postId));
                         navigate("/tasker-dashboard", { state: { deleteMessage: "Post deleted successfully" } });
                     }
@@ -69,22 +69,29 @@ function Taskerdashboard() {
                     {posts && posts.length > 0 ? (
                         posts.map((post) => (
                             <div key={post.id} className="post-card">
+                                <details>
+                                    <summary>...</summary>
+
+                                    <button onClick={() => navigate(`/post/${post.id}/edit`, {
+                                        state: {
+                                            postId: post.id,
+                                            initialContent: post.content
+                                        }
+                                    })} className="edit-link">Edit</button>
+                                    <button
+                                        onClick={() => handleDeletePost(post.id)}
+                                        className="delete-button"
+                                    >
+                                        Delete
+                                    </button>
+                                </details>
+                                <h1 className="post-author">{post.tasker_name}</h1>
+                                <h5 className="post-title">{post.title}</h5>
                                 <p className="post-content">{post.content}</p>
-                                <p className="post-author">Posted by: {post.tasker_name}</p>
+                                <p className="post-price">Price: {post.price}</p>
                                 {currentTaskerId === post.tasker_id && (
                                     <div className="post-actions">
-                                        <button onClick={() => navigate(`/post/${post.id}/edit`, { 
-                                            state: { 
-                                                postId: post.id,
-                                                initialContent: post.content 
-                                            }
-                                        })} className="edit-link">Edit</button>
-                                        <button 
-                                            onClick={() => handleDeletePost(post.id)} 
-                                            className="delete-button"
-                                        >
-                                            Delete
-                                        </button>
+
                                     </div>
                                 )}
                             </div>

@@ -3,10 +3,9 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background: #5F41E4;
 }
 
-.login-container {
+.editProfile-container {
     margin: 0 auto;
     width: 350px;
     padding: 2rem 1.5rem;
@@ -23,14 +22,14 @@
     color: #333;
 }
 
-.login-form .input-wrapper {
+.editProfile-form .input-wrapper {
     height: 54px;
     width: 100%;
     position: relative;
     margin-bottom: 1.5rem;
 }
 
-.login-form .input-field {
+.editProfile-form .input-field {
     width: 80%;
     height: 100%;
     outline: none;
@@ -41,15 +40,15 @@
     transition: 0.2s ease;
 }
 
-.login-form .input-field:focus {
+.editProfile-form .input-field:focus {
     border-color: #5F41E4;
 }
 
-.login-form .input-field::placeholder {
+.editProfile-form .input-field::placeholder {
     color: #9284c8;
 }
 
-.login-form .input-wrapper .material-symbols-outlined {
+.editProfile-form .input-wrapper .material-symbols-outlined {
     position: absolute;
     top: 50%;
     left: 0.93rem;
@@ -60,11 +59,11 @@
     transition: color 0.2s ease;
 }
 
-.login-form .input-field:focus ~ .material-symbols-outlined {
+.editProfile-form .input-field:focus ~ .material-symbols-outlined {
     color: #5F41E4;
 }
 
-.login-button {
+.editProfile-button {
     border: none;
     outline: none;
     width: 100%;
@@ -78,7 +77,7 @@
     transition: 0.3s ease;
 }
 
-.login-button:hover {
+.editProfile-button:hover {
     background: #4320df;
 }
 
@@ -89,7 +88,7 @@
 }
 
 @media (max-width: 768px) {
-    .login-container {
+    .editProfile-container {
         width: 90%;
         margin: 0 15px;
     }

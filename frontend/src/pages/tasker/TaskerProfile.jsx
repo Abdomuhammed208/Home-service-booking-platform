@@ -1,12 +1,10 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import NotFound from "../../components/Notfound";
 import "./TaskerProfile.css";
 
 function TaskerProfile() {
-    const location = useLocation();
-    const message = location.state?.loginMessage;
     const navigate = useNavigate();
     const [tasker, setTasker] = useState(null);
 
@@ -93,7 +91,7 @@ function TaskerProfile() {
         <div className="profile-container">
             <div className="profile-header">
                 <h2>Tasker Profile</h2>
-                <a href="/tasker-submit" className="edit-link">Edit Profile</a>
+                <a href="/edit-profile-tasker" className="edit-link">Edit Profile</a>
             </div>
 
             <div className="profile-image-section">
@@ -158,3 +156,4 @@ function TaskerProfile() {
 }
 
 export default TaskerProfile;
+ 

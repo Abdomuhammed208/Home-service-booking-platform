@@ -81,7 +81,6 @@ app.get("/", (req, res) => {
 app.get("/user", async function (req, res) {
   const result = await db.query("SELECT * FROM posts");
   const posts = result.rows;
-  console.log("Fetched posts from user page: ", posts);
   if (posts && posts.length > 0) {
     res.json({ success: true, posts:posts });
   } else {
@@ -93,7 +92,6 @@ app.get("/user", async function (req, res) {
 app.get("/tasker", async function (req, res) {
   const result = await db.query("SELECT * FROM posts");
   const posts = result.rows;
-  console.log("Fetched posts:", posts);
   if (posts && posts.length > 0) {
     res.json({ posts });
   } else {
@@ -107,10 +105,9 @@ app.post("/transfer",async function (req, res) {
   const userTransaction  = await db.query("SELECT name, money FROM users WHERE email = $1",
      [userId]);
   const userAmount = userTransaction.rows[0];
-  console.log("User amount: " + parseFloat(userAmount.money));
-  console.log("The amount: " + amount);
+
   const totalAmount = parseFloat(userAmount.money) - parseFloat(amount) || userAmount.money;
-  console.log("Totla amount: " + parseFloat(totalAmount));
+
   const userResult = await db.query("UPDATE users SET money = $1 WHERE email = $2",
      [totalAmount, userId]);
   
@@ -159,10 +156,6 @@ app.post("/top-up-tasker", async function (req, res) {
 
 
 // <-------------------------------SHARE POST-------------------------------->
-app.get("/post", async function (req, res) {
-res.render("post.ejs")
-});
-
 // app.get("/post/:postId", async function (req, res) {
 //   try {
 //     const postId = req.params.id;
@@ -186,18 +179,16 @@ app.post("/post", async function (req, res) {
   if (!req.user || !req.user.id) {
     return res.status(400).send("User is not logged in.");
   }
+  const submittedTitle = req.body.title;
   const submittedPost = req.body.post;
+  const submittedPrice = req.body.price;
   const taskerId = req.user.id;
   const taskerName = req.user.name;
-  console.log(taskerName)
-
-  if (!taskerId) {
-    return res.status(400).send("Tasker ID not found.");
-  }
-  console.log(submittedPost);
+  console.log(req.body);
+  console.log("This is the price: " + submittedPrice);
   try {
-    const result = await db.query("INSERT INTO posts (content, tasker_id, tasker_name) VALUES ($1, $2, $3) RETURNING id",
-      [submittedPost, taskerId, taskerName]);
+    const result = await db.query("INSERT INTO posts (content, tasker_id, tasker_name, title, price) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+      [submittedPost, taskerId, taskerName, submittedTitle, submittedPrice]);
     const post = result.rows[0];
   } catch (err) {
     console.log(err)
@@ -210,18 +201,56 @@ app.get("/tasker/:postId", async (req, res) => {
   try {
     const id = req.params.postId;
     const postResult = await db.query("SELECT tasker_id FROM posts WHERE tasker_id = $1", [id]);
-    console.log("id: "+ id)
-    const taskerId = postResult.rows[0];
-    console.log("Tasker ID:" + taskerId.tasker_id);
-    const taskerResult = await db.query("SELECT * FROM taskers WHERE id = $1", [taskerId.tasker_id]);
+    const taskerId = postResult.rows[0].tasker_id;
+    const taskerResult = await db.query("SELECT * FROM taskers WHERE id = $1", [taskerId]);
     const taskers = taskerResult.rows[0];
-    res.render("view-tasker-profile.ejs", { tasker: taskers });
-
+    res.json({ taskers });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
+// <---------------------------BOOK SERVICE------------------------------------>
+
+app.post("/book-service", async function (req, res) {
+  const date = req.body.date + " " + req.body.time;
+  const paymentMethod = req.body.paymentMethod;
+  const cardNumber = req.body.cardNumber;
+  const cardName = req.body.cardName;
+  const expiryDate = req.body.expiryDate;
+  const cvv = req.body.cvv;
+  const amount = req.body.amount || 0;
+  console.log("Booking details: ", req.body);
+  if(paymentMethod === "cash"){
+    const paymentstatus = "Unpaied";
+    await db.query("INSERT INTO bookings (date, payment_status, amount, method) VALUES ($1, $2, $3, $4) RETURNING *",
+      [date, paymentstatus, amount, paymentMethod]);
+  } else if(paymentMethod === "card"){
+    const paymentstatus = "successful";
+   await db.query("INSERT INTO bookings (date, payment_status, amount, method) VALUES ($1, $2, $3, $4) RETURNING *",
+      [date, paymentstatus, amount, paymentMethod]);
+      await db.query("INSERT INTO payments (status, cardnum, cardname, expirydate, cvv, amount, method) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+        [paymentstatus, cardNumber, cardName, expiryDate, cvv, amount, paymentMethod]);
+  }else if(paymentMethod === "wallet"){
+    const paymentstatus = "successful";
+    await db.query("INSERT INTO bookings (date, payment_status, amount, method) VALUES ($1, $2, $3, $4) RETURNING *",
+      [date, paymentstatus, amount, paymentMethod]);
+      await db.query("INSERT INTO payments (status, amount, method) VALUES ($1, $2, $3) RETURNING *",
+        [ paymentstatus,amount, paymentMethod]);
+  }else{
+    res.json({ ok: false, message: "Invalid payment method" });
+  }
+  res.json({ ok: true, message: "Booking submitted successfully" });
+});
+
+
+
+
+
+
+
+// <--------------------------------------------------------------->
+
 app.get("/post/:id/edit", async function (req,res) {
     if (!req.isAuthenticated()) {
         return res.status(401).json({ error: "Unauthorized" });
@@ -249,8 +278,6 @@ app.post("/post/:id/edit", async function (req, res) {
     const id = req.params.id;
     const submittedPost = req.body.post;
     const taskerId = req.user.id;
-    console.log("This is post id: " + req.params.id);
-    console.log("This is the post: " + req.body.post);
 
     const checkResult = await db.query(
         "SELECT * FROM posts WHERE id = $1 AND tasker_id = $2",
@@ -321,10 +348,9 @@ app.post("/delete-account", async function (req, res) {
   }
 });
 
+
 app.get("/tasker-profile", async function (req, res) {
-  if (req.isAuthenticated()) {
-    console.log(req.user.email);
-    
+  if (req.isAuthenticated()) {    
     const result = await db.query("SELECT * FROM taskers WHERE email = $1",
       [req.user.email]);
     const tasker = result.rows[0];
@@ -334,19 +360,16 @@ app.get("/tasker-profile", async function (req, res) {
   }
 
 });
-app.get("/tasker-submit", function (req, res) {
-  if (req.isAuthenticated()) {
-    res.render("tasker-submit.ejs")
-  } else {
-    res.redirect("/login")
-  }
-});
+
+
+
 app.post("/tasker-submit", async function (req, res) {
   const submittedName = req.body.name;
   const submittedMobileNum = req.body.mobile;
   const submittedEmail = req.body.email;
   const submittedCity = req.body.city;
-  const submittedType = req.body.type;
+  const submittedService = req.body.service;
+  console.log(req.body);
   try {
     const result = await db.query("SELECT * FROM taskers WHERE email = $1",
       [req.user.email]);
@@ -357,13 +380,13 @@ app.post("/tasker-submit", async function (req, res) {
     const mobileToUpdate = submittedMobileNum || currentData.mobile;
     const emailToUpdate = submittedEmail || currentData.email;
     const cityToUpdate = submittedCity || currentData.city;
-    const typeToUpdate = submittedType || currentData.type;
+    const serviceToUpdate = submittedService || currentData.service;
+    console.log("This is the service to be updated: " + serviceToUpdate);
 
-    const updatingResult = await db.query("UPDATE taskers SET name = $1, mobile = $2, email = $3, city = $4, type = $5 WHERE email = $6",
-      [nameToUpdate, mobileToUpdate, emailToUpdate, cityToUpdate, typeToUpdate, req.user.email]
+    const updatingResult = await db.query("UPDATE taskers SET name = $1, mobile = $2, email = $3, city = $4, service=$5 WHERE email = $6",
+      [nameToUpdate, mobileToUpdate, emailToUpdate, cityToUpdate, serviceToUpdate, req.user.email]
     );
     req.user.email = emailToUpdate;
-    res.redirect("/tasker-profile");
   } catch (err) {
     console.log(err)
   }
@@ -461,7 +484,6 @@ app.get("/profile", async function (req, res) {
   }
 });
 
-// Add profile image upload route
 app.post("/upload-profile-image", upload.single('profile_image'), async function (req, res) {
   try {
     if (!req.user) {
@@ -499,13 +521,7 @@ app.post("/tasker-signup", upload.single('profile_image'), async function (req, 
     const service = req.body.service;
     const gender = req.body.gender;
     const city = req.body.city;
-    console.log("Name: " + name);
-    console.log("Email: " + email);
-    console.log("Mobile: " + mobile);
-    console.log("Password: " + password);
-    console.log("Service: " + service);
-    console.log("Gender: " + gender);
-    console.log("City: " + city);
+
     const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
 
     const checkResult = await db.query("SELECT * FROM taskers WHERE email = $1", [email]);
@@ -562,8 +578,6 @@ app.post("/submit", async function (req, res) {
   const submittedName = req.body.name;
   const submittedMobileNum = req.body.mobile;
   const submittedEmail = req.body.email;
-  console.log(req.body);
-  console.log(req.user.email);
   try {
 
     const userResult = await db.query("SELECT * FROM users WHERE email = $1", [req.user.email]);
@@ -578,8 +592,6 @@ app.post("/submit", async function (req, res) {
       [nameToUpdate, mobileToUpdate, emailToUpdate, req.user.email]
     );
     req.user.email = emailToUpdate;
-    console.log("This is email of the profile: ", req.user.email);
-
 
     res.json({ ok: true, message: "All data have beebn changed" });
   } catch (err) {

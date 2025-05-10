@@ -7,6 +7,7 @@ import "./Profile.css";
 function Profile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+
   
   const goToTopupPage = () => {
     navigate("/top-up");

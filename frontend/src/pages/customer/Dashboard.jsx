@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import './dashboard.css';
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 function Dashboard() {
     const location = useLocation();
     const message = location.state?.loginMessage;
-    //const navigate = useNavigate();
+    const navigate = useNavigate();
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    
 
     useEffect(() => {
         const fetchPosts = async () => {
@@ -60,14 +61,32 @@ function Dashboard() {
                     ) : posts && posts.length > 0 ? (
                         posts.map((post) => (
                             <div key={post.id} className="post-card">
+                                <h3 onClick={() => navigate(`/tasker/${post.tasker_id}`)} className="post-author">{post.tasker_name}</h3>
+                                <h4 className="post-title">{post.title}</h4>
                                 <p className="post-content">{post.content}</p>
-                                <p className="post-author">Posted by: {post.tasker_name}</p>
+                                <p className="post-price">Price: {post.price}</p>
+                                <button 
+                                    className='book-btn'
+                                    onClick={() => navigate('/checkout', { 
+                                        state: { 
+                                            postDetails: {
+                                                taskerName: post.tasker_name,
+                                                content: post.content,
+                                                title: post.title,
+                                                price: post.price
+                                            }
+                                        }
+                                    })}
+                                >
+                                    Book now
+                                </button>
                             </div>
                         ))
                     ) : (
                         <div className="no-posts-message">
                             <p>No posts found</p>
                             <p>Check back later for new posts from taskers!</p>
+                            
                         </div>
                     )}
                 </div>

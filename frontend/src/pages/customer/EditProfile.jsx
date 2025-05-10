@@ -75,7 +75,7 @@ const EditProfile = () => {
     if (loading) {
         return (
             <div className="container">
-                <div className="login-container">
+                <div className="editProfile-container">
                     <div className="loading-message">Loading profile data...</div>
                 </div>
             </div>
@@ -84,12 +84,12 @@ const EditProfile = () => {
 
     return (
         <div className="container">
-            <div className="login-container">
+            <div className="editProfile-container">
                 <h1 className="form-title">Edit Profile</h1>
                 {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
                 {success && <p style={{ color: 'green', textAlign: 'center' }}>{success}</p>}
                 
-                <form className="login-form" onSubmit={handleSubmit}>
+                <form className="editProfile-form" onSubmit={handleSubmit}>
                     <div className="input-wrapper">
                         <input
                             className="input-field"
@@ -129,9 +129,9 @@ const EditProfile = () => {
                         <span className="material-symbols-outlined">mail</span>
                     </div>
 
-                    <button className="login-button" type="submit">Save Changes</button>
+                    <button className="editProfile-button" type="submit">Save Changes</button>
                     <button 
-                        className="login-button" 
+                        className="editProfile-button" 
                         type="button"
                         onClick={() => navigate("/profile")}
                         style={{ marginTop: '10px', backgroundColor: '#dc3545' }}
