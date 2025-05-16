@@ -54,8 +54,6 @@ app.use(
 );
 
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static("public"));
-app.set('view engine', 'ejs');
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(cors({
@@ -197,12 +195,12 @@ app.post("/post", async function (req, res) {
 });
 
 // <-------------------------------VISIT PROFILE-------------------------------->
-app.get("/tasker/:postId", async (req, res) => {
+app.get("/tasker/:taskerId", async (req, res) => {
   try {
-    const id = req.params.postId;
+    const id = req.params.taskerId;
     const postResult = await db.query("SELECT tasker_id FROM posts WHERE tasker_id = $1", [id]);
-    const taskerId = postResult.rows[0].tasker_id;
-    const taskerResult = await db.query("SELECT * FROM taskers WHERE id = $1", [taskerId]);
+    const tasker_id = postResult.rows[0].tasker_id;
+    const taskerResult = await db.query("SELECT * FROM taskers WHERE id = $1", [tasker_id]);
     const taskers = taskerResult.rows[0];
     res.json({ taskers });
   } catch (err) {
@@ -350,11 +348,17 @@ app.post("/delete-account", async function (req, res) {
 
 
 app.get("/tasker-profile", async function (req, res) {
-  if (req.isAuthenticated()) {    
+  if (req.isAuthenticated()) {   
+    const taskerId = req.user.id;
     const result = await db.query("SELECT * FROM taskers WHERE email = $1",
       [req.user.email]);
+    const feedbackResult = await db.query("SELECT * FROM feedback WHERE tasker_id = $1",
+      [taskerId]);
+    const feedback = feedbackResult.rows;
+    const userResult = await db.query("SELECT name FROM users WHERE id = $1", [feedback.user_id]);
+    const user = userResult.rows[0];
     const tasker = result.rows[0];
-      res.json({ success: true, tasker });
+      res.json({ success: true, tasker, feedback, user });
   } else {
     res.json({ success:false, message: "Not authenticated" });
   }
@@ -693,6 +697,79 @@ app.post("/upload-tasker-image", upload.single('profile_image'), async function 
     res.status(500).json({ error: "Failed to upload image" });
   }
 });
+
+
+// <------------------------------FEEDBACK--------------------------------->
+
+app.post("/tasker/:taskerId/feedback", async (req, res) => {
+  try {
+    const feedback = req.body.feedback;
+    const rating = req.body.rating;
+    const taskerId = req.params.taskerId;
+    const userId = req.user.id;
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: "Invalid rating. Please provide a rating between 1 and 5." });
+    }
+
+    const result = await db.query(
+      "INSERT INTO feedback (comment, rating, tasker_id, user_id) VALUES ($1, $2, $3, $4) RETURNING *", 
+      [feedback, rating, taskerId, userId]
+    );
+    
+    res.json({ success: true, message: "Feedback submitted successfully" });
+  } catch (err) {
+    console.error("Error submitting feedback:", err);
+    res.status(500).json({ error: "Failed to submit feedback" });
+  }
+});
+
+
+app.get("/tasker/:taskerId/feedback", async (req, res) => {
+  try {
+    const taskerId = req.params.taskerId;
+      const result = await db.query(
+      "SELECT f.*, u.name as user_name FROM feedback f LEFT JOIN users u ON f.user_id = u.id WHERE f.tasker_id = $1 ORDER BY f.id DESC",
+      [taskerId]
+    );
+    
+    const feedback = result.rows;
+    res.json({ feedback });
+  } catch (err) {
+    console.error("Error fetching feedback:", err);
+    res.status(500).json({ error: "Failed to fetch feedback" });
+  }
+});
+
+// <------------------------------CHAT--------------------------------->
+
+app.get("/chat/:taskerId", async (req, res) => {
+  const taskerId = req.params.taskerId;
+  const customerId = req.user.id;
+  const result = await db.query("SELECT * FROM messages WHERE tasker_id = $1 AND customer_id = $2", [taskerId, customerId]);
+  const messages = result.rows;
+  res.json({ success: true, messages });
+});
+
+app.post("/chat/send", async (req, res) => {
+  const message = req.body.message;
+  const customer_id = req.body.customer_id;
+  const tasker_id = req.body.tasker_id;
+  const sender_id = req.body.sender_id;
+  const receiver_id = req.body.receiver_id;
+  console.log(message, customer_id, tasker_id, sender_id, receiver_id);
+  const result = await db.query(
+    "INSERT INTO messages (message, customer_id, tasker_id, sender_id, receiver_id) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+    [message, customer_id, tasker_id, sender_id, receiver_id]
+  );
+  res.json({ success: true, message: result.rows[0] });
+});
+
+
+
+// <--------------------------------------------------------------->
+
+
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

@@ -17,6 +17,7 @@ import EditPost from './pages/posts/EditPost.jsx';
 import EditProfileTasker from './pages/tasker/EditProfileTasker.jsx';
 import UserAccount from './pages/users/UserAccount.jsx';
 import Checkout from './pages/customer/Checkout.jsx';
+import ChatBox from './pages/chat/ChatBox.jsx';
 function App() {
 
   return (
@@ -38,8 +39,9 @@ function App() {
      <Route path='/new-post' element={<NewPost/>}/>
      <Route path='/post/:id/edit' element={<EditPost/>}/>
      <Route path='/edit-profile-tasker' element={<EditProfileTasker/>}/>
-     <Route path='/tasker/:postId' element={<UserAccount/>}/>
+     <Route path='/tasker/:taskerId' element={<UserAccount/>}/>
      <Route path='/checkout' element={<Checkout/>}/>
+     <Route path='/chat/:taskerId' element={<ChatBox/>}/>
      </Routes>
      </BrowserRouter>
     

@@ -7,7 +7,8 @@ import "./TaskerProfile.css";
 function TaskerProfile() {
     const navigate = useNavigate();
     const [tasker, setTasker] = useState(null);
-
+    const [feedback, setFeedback] = useState(null);
+    const [user, setUser] = useState(null);
     const goToTopupPage = () => {
         navigate("/top-up-tasker");
     };
@@ -23,6 +24,8 @@ function TaskerProfile() {
             })
             .then((data) => {
                 setTasker(data.tasker);
+                setFeedback(data.feedback);
+                setUser(data.user);
             })
             .catch((err) => {
                 console.error("Failed to fetch tasker profile:", err);
@@ -151,6 +154,24 @@ function TaskerProfile() {
                 <button onClick={handleLogout} className="btn btn-logout">Logout</button>
                 <button onClick={handleDelete} className="btn btn-delete">Delete Account</button>
             </div>
+
+
+
+            {feedback && feedback.length > 0 && (
+                <div className="feedback-section">
+                    <h2>Feedback</h2>
+                    <div className="feedback-list">
+                        {feedback.map((item, index) => (
+                            <div key={index} className="feedback-item">
+                                <p>{item.comment}</p>
+                                <p>{item.rating} ★</p>
+                                <p>Rated by: {user}</p>
+                            </div>
+                        ))}
+
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
