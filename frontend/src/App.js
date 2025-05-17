@@ -18,6 +18,8 @@ import EditProfileTasker from './pages/tasker/EditProfileTasker.jsx';
 import UserAccount from './pages/users/UserAccount.jsx';
 import Checkout from './pages/customer/Checkout.jsx';
 import ChatBox from './pages/chat/ChatBox.jsx';
+import CustomerAccount from './pages/users/CustomerAccount.jsx';
+import Conversation from './pages/tasker/Conversation.jsx';
 function App() {
 
   return (
@@ -42,6 +44,8 @@ function App() {
      <Route path='/tasker/:taskerId' element={<UserAccount/>}/>
      <Route path='/checkout' element={<Checkout/>}/>
      <Route path='/chat/:taskerId' element={<ChatBox/>}/>
+     <Route path='/customer/:customerId' element={<CustomerAccount/>}/>
+     <Route path='/chatbox/:customerId' element={<Conversation/>}/>
      </Routes>
      </BrowserRouter>
     

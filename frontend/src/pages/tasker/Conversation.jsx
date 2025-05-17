@@ -1,66 +1,69 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import './ChatBox.css';
+import '../../pages/chat/ChatBox.css';
 import axios from 'axios';
 
-function ChatBox() {
+function Conversation() {
     const [messages, setMessages] = useState([]);
     const [message, setMessage] = useState('');
     const [user, setUser] = useState(null);
-    const [tasker, setTasker] = useState(null);
-    const { taskerId } = useParams();
+    const [customer, setCustomer] = useState(null);
+    const {customerId } = useParams();
     const messagesEndRef = useRef(null);
 
-    // Fetch messages function
+    // Fetch all messages between this tasker and this customer, regardless of sender/receiver
     const fetchMessages = useCallback(async () => {
         try {
-            const chatResponse = await axios.get(`http://localhost:3000/chat/${taskerId}`, {
+            // Get both tasker and customer IDs
+            const userResponse = await axios.get('http://localhost:3000/tasker-profile', { withCredentials: true });
+            const taskerId = userResponse.data.tasker.id;
+            // Fetch all messages between this tasker and this customer
+            const chatResponse = await axios.get(`http://localhost:3000/messages/thread?customer_id=${customerId}&tasker_id=${taskerId}`, {
                 withCredentials: true
             });
             const chatData = chatResponse.data;
             if (chatData.success) {
-                setMessages(chatData.messages || []);
+                // Sort messages by timestamp if needed
+                const sorted = (chatData.messages || []).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                setMessages(sorted);
             }
         } catch (err) {
             console.error('Error fetching messages:', err);
         }
-    }, [taskerId]);
+    }, [customerId]);
 
     // Initial data fetch
     useEffect(() => {
         const fetchData = async () => {
             try {
                 // Fetch user data
-                const userResponse = await fetch('http://localhost:3000/profile', {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include'
+                const userResponse = await axios.get('http://localhost:3000/tasker-profile', {
+                    withCredentials: true
                 });
-                const userData = await userResponse.json();
-                setUser(userData.user);
+                const userData = userResponse.data;
+                setUser(userData.tasker);
 
-                // Fetch tasker data
-                const taskerResponse = await fetch(`http://localhost:3000/tasker/${taskerId}`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include'
+                // Fetch customer data
+                const customerResponse = await axios.get(`http://localhost:3000/customer/${customerId}`, {
+                    withCredentials: true
                 });
-                const taskerData = await taskerResponse.json();
-                setTasker(taskerData.taskers);
+                const customerData = customerResponse.data;
+                setCustomer(customerData.customers);
 
-                // Initial messages fetch
+                // Fetch initial messages
                 await fetchMessages();
             } catch (err) {
                 console.error('Error fetching chat data:', err);
             }
         };
-        fetchData();
-    }, [taskerId, fetchMessages]);
 
-    // Polling for new messages
+        fetchData();
+    }, [customerId, fetchMessages]);
+
+    // Set up polling for new messages
     useEffect(() => {
-        const pollInterval = setInterval(fetchMessages, 500); // every 2 seconds
-        return () => clearInterval(pollInterval);
+        const pollInterval = setInterval(fetchMessages, 500); // Check every 2 seconds
+        return () => clearInterval(pollInterval); // Cleanup on unmount
     }, [fetchMessages]);
 
     useEffect(() => {
@@ -69,22 +72,22 @@ function ChatBox() {
 
     const handleSendMessage = async (e) => {
         e.preventDefault();
-        if (!message.trim() || !user || !taskerId) return;
+        if (!message.trim() || !user || !customerId) return;
 
         try {
             const response = await axios.post('http://localhost:3000/chat/send', {
-                customer_id: user.id,
-                tasker_id: taskerId,
-                sender_id: user.id,
-                receiver_id: taskerId,
+                customer_id: customerId,
+                tasker_id: user.id,  
+                sender_id: user.id, // tasker is sending
+                receiver_id: customerId, // customer is receiving
                 message: message.trim()
             }, {
                 withCredentials: true
             });
 
             if (response.data.success) {
-                setMessages(prev => [...prev, response.data.message]);
                 setMessage('');
+                // Fetch all messages after sending
                 await fetchMessages();
             }
         } catch (err) {
@@ -95,7 +98,7 @@ function ChatBox() {
     return (
         <div className="chat-container">
             <div className="chat-header">
-                <h2>Chat with {tasker?.name}</h2>
+                <h2>Chat with {customer?.name}</h2>
             </div>
 
             <div className="messages-container">
@@ -133,4 +136,6 @@ function ChatBox() {
     );
 }
 
-export default ChatBox; 
+export default Conversation; 
+
+

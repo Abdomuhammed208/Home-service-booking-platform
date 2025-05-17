@@ -198,9 +198,11 @@ app.post("/post", async function (req, res) {
 app.get("/tasker/:taskerId", async (req, res) => {
   try {
     const id = req.params.taskerId;
-    const postResult = await db.query("SELECT tasker_id FROM posts WHERE tasker_id = $1", [id]);
-    const tasker_id = postResult.rows[0].tasker_id;
-    const taskerResult = await db.query("SELECT * FROM taskers WHERE id = $1", [tasker_id]);
+    console.log(id);
+    // const postResult = await db.query("SELECT tasker_id FROM posts WHERE tasker_id = $1", [id]);
+    // const tasker_id = postResult.rows[0].tasker_id;
+    // console.log(tasker_id);
+    const taskerResult = await db.query("SELECT * FROM taskers WHERE id = $1", [id]);
     const taskers = taskerResult.rows[0];
     res.json({ taskers });
   } catch (err) {
@@ -347,22 +349,46 @@ app.post("/delete-account", async function (req, res) {
 });
 
 
-app.get("/tasker-profile", async function (req, res) {
-  if (req.isAuthenticated()) {   
-    const taskerId = req.user.id;
-    const result = await db.query("SELECT * FROM taskers WHERE email = $1",
-      [req.user.email]);
-    const feedbackResult = await db.query("SELECT * FROM feedback WHERE tasker_id = $1",
-      [taskerId]);
-    const feedback = feedbackResult.rows;
-    const userResult = await db.query("SELECT name FROM users WHERE id = $1", [feedback.user_id]);
-    const user = userResult.rows[0];
-    const tasker = result.rows[0];
-      res.json({ success: true, tasker, feedback, user });
-  } else {
-    res.json({ success:false, message: "Not authenticated" });
-  }
+// app.get("/tasker-profile", async function (req, res) {
+//   if (req.isAuthenticated()) {   
+//     const taskerId = req.user.id;
+//     const result = await db.query("SELECT * FROM taskers WHERE email = $1",
+//       [req.user.email]);
+//     const feedbackResult = await db.query("SELECT * FROM feedback WHERE tasker_id = $1",
+//       [taskerId]);
+//     const feedback = feedbackResult.rows;
+//     const userResult = await db.query("SELECT name FROM users WHERE id = $1", [feedback.user_id]);
+//     const user = userResult.rows[0];
+//     const tasker = result.rows[0];
+//       res.json({ success: true, tasker, feedback, user });
+//   } else {
+//     res.json({ success:false, message: "Not authenticated" });
+//   }
 
+// });
+
+app.get("/tasker-profile", async (req, res) => {
+  try {
+    const taskerEmail = req.user.email; // assuming user is authenticated
+    const taskerResult = await db.query("SELECT * FROM taskers WHERE email = $1", [taskerEmail]);
+    const tasker = taskerResult.rows[0];
+
+    const feedbackResult = await db.query(
+      "SELECT f.*, u.name AS user_name FROM feedback f LEFT JOIN users u ON f.user_id = u.id WHERE f.tasker_id = $1 ORDER BY f.id DESC",
+      [tasker.id]
+    );
+
+    const userResult = await db.query("SELECT * FROM users WHERE email = $1", [req.user.email]);
+
+    res.json({
+      tasker,
+      feedback: feedbackResult.rows,
+      user: userResult.rows[0]
+    });
+  } catch (err) {
+    console.error("Failed to fetch tasker profile:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 
@@ -421,17 +447,17 @@ app.get("/submit", function (req, res) {
 })
 app.get("/admin", async function (req, res) {
   if (req.isAuthenticated()) {
-    const isAdmin = req.user.role === "admin";
-    if (isAdmin) {
       const taskerResult = await db.query("SELECT * FROM taskers");
       const taskers = taskerResult.rows;
-      res.render("admin.ejs", { taskers: taskers });
-    } else {
-      res.redirect("/login-admin");
-    }
-  } else {
-    res.redirect("/login-admin");
-  }
+      console.log(taskers);
+      res.json({ taskers });
+    } 
+});
+
+app.delete("/admin/:id", async function (req, res) {
+  const id = req.params.id;
+  await db.query("DELETE FROM taskers WHERE id = $1", [id]);
+  res.json({ success: true, message: "Tasker deleted successfully" });
 });
 
 app.post("/login", (req, res, next) => {
@@ -657,8 +683,9 @@ passport.deserializeUser(async (user, done) => {
       result = await db.query("SELECT * FROM users WHERE id = $1", [user.id]);
     } else if (user.role === 'tasker') {
       result = await db.query("SELECT * FROM taskers WHERE id = $1", [user.id]);
+    }else if (user.role === 'admin') {
+      result = await db.query("SELECT * FROM admin WHERE id = $1", [user.id]);
     }
-    
     if (result.rows.length > 0) {
       done(null, result.rows[0]);
     } else {
@@ -732,7 +759,6 @@ app.get("/tasker/:taskerId/feedback", async (req, res) => {
       "SELECT f.*, u.name as user_name FROM feedback f LEFT JOIN users u ON f.user_id = u.id WHERE f.tasker_id = $1 ORDER BY f.id DESC",
       [taskerId]
     );
-    
     const feedback = result.rows;
     res.json({ feedback });
   } catch (err) {
@@ -751,13 +777,20 @@ app.get("/chat/:taskerId", async (req, res) => {
   res.json({ success: true, messages });
 });
 
+app.get("/chat/:customerId", async (req, res) => {
+  const customerId = req.params.customerId;
+  const taskerId = req.user.id;
+  const result = await db.query("SELECT * FROM messages WHERE customer_id = $1 AND tasker_id = $2", [customerId, taskerId]);
+  const messages = result.rows;
+  res.json({ success: true, messages });
+});
+
 app.post("/chat/send", async (req, res) => {
   const message = req.body.message;
   const customer_id = req.body.customer_id;
   const tasker_id = req.body.tasker_id;
   const sender_id = req.body.sender_id;
   const receiver_id = req.body.receiver_id;
-  console.log(message, customer_id, tasker_id, sender_id, receiver_id);
   const result = await db.query(
     "INSERT INTO messages (message, customer_id, tasker_id, sender_id, receiver_id) VALUES ($1, $2, $3, $4, $5) RETURNING *",
     [message, customer_id, tasker_id, sender_id, receiver_id]
@@ -765,11 +798,38 @@ app.post("/chat/send", async (req, res) => {
   res.json({ success: true, message: result.rows[0] });
 });
 
-
-
 // <--------------------------------------------------------------->
+app.get("/customer/:customerId", async (req, res) => {
+  try {
+    const id = req.params.customerId;
+    const postResult = await db.query("SELECT user_id FROM feedback WHERE user_id = $1", [id]);
+    const customer_id = postResult.rows[0].user_id;
+    const customerResult = await db.query("SELECT * FROM users WHERE id = $1", [customer_id]);
+    const customers = customerResult.rows[0];
+    res.json({ customers });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
-
+// Fetch all messages between a customer and a tasker, regardless of sender/receiver
+app.get('/messages/thread', async (req, res) => {
+  const { customer_id, tasker_id } = req.query;
+  if (!customer_id || !tasker_id) {
+    return res.status(400).json({ success: false, message: 'Missing customer_id or tasker_id' });
+  }
+  try {
+    const result = await db.query(
+      'SELECT * FROM messages WHERE customer_id = $1 AND tasker_id = $2 ORDER BY timestamp ASC',
+      [customer_id, tasker_id]
+    );
+    res.json({ success: true, messages: result.rows });
+  } catch (err) {
+    console.error('Error fetching thread messages:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import NotFound from "../../components/Notfound";
@@ -8,7 +8,7 @@ function TaskerProfile() {
     const navigate = useNavigate();
     const [tasker, setTasker] = useState(null);
     const [feedback, setFeedback] = useState(null);
-    const [user, setUser] = useState(null);
+    const { taskerId } = useParams();
     const goToTopupPage = () => {
         navigate("/top-up-tasker");
     };
@@ -25,12 +25,25 @@ function TaskerProfile() {
             .then((data) => {
                 setTasker(data.tasker);
                 setFeedback(data.feedback);
-                setUser(data.user);
             })
             .catch((err) => {
                 console.error("Failed to fetch tasker profile:", err);
             });
-    }, []);
+
+            const fetchFeedback = async () => {
+                const feedbackResponse = await fetch(`http://localhost:3000/tasker/${taskerId}/feedback`, {
+                    method: "GET",
+                    credentials: "include"
+                });
+        
+                if (feedbackResponse.ok) {
+                    const feedbackData = await feedbackResponse.json();
+                    setFeedback(feedbackData.feedback || []);
+                }
+            };
+
+            fetchFeedback();
+    }, [taskerId]);
 
     const handleImageChange = async (e) => {
         const file = e.target.files[0];
@@ -57,6 +70,7 @@ function TaskerProfile() {
             }
         }
     };
+
 
     const handleLogout = async () => {
         try {
@@ -155,20 +169,17 @@ function TaskerProfile() {
                 <button onClick={handleDelete} className="btn btn-delete">Delete Account</button>
             </div>
 
-
-
             {feedback && feedback.length > 0 && (
                 <div className="feedback-section">
-                    <h2>Feedback</h2>
+                    <h2 className="feedback-title">Feedback</h2>
                     <div className="feedback-list">
                         {feedback.map((item, index) => (
                             <div key={index} className="feedback-item">
-                                <p>{item.comment}</p>
-                                <p>{item.rating} ★</p>
-                                <p>Rated by: {user}</p>
+                                <p className="feedback-comment">{item.comment}</p>
+                                <p className="feedback-rating">{item.rating} ★</p>
+                                <p className="feedback-user" onClick={() => navigate(`/customer/${item.user_id}`)}>Rated by: {item.user_name}</p>
                             </div>
                         ))}
-
                     </div>
                 </div>
             )}

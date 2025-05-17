@@ -53,19 +53,20 @@
 
 .message.sent .message-content {
     background: #0088A9;
-    color: white;
+    color: black;
     border-radius: 12px 12px 0 12px;
 }
 
 .message.received .message-content {
     background: #f0f2f5;
-    color: #1c1e21;
+    color: black;
     border-radius: 12px 12px 12px 0;
 }
 
 .message-content p {
     margin: 0;
     word-wrap: break-word;
+    color: black;
 }
 
 .message-time {
@@ -73,6 +74,7 @@
     opacity: 0.7;
     margin-top: 0.3rem;
     display: block;
+    color: black;
 }
 
 .message-input-container {
