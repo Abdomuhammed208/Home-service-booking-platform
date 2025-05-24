@@ -88,7 +88,7 @@ function Taskerdashboard() {
                                 <h1 className="post-author">{post.tasker_name}</h1>
                                 <h5 className="post-title">{post.title}</h5>
                                 <p className="post-content">{post.content}</p>
-                                <p className="post-price">Price: {post.price}</p>
+                                <p className="post-price">Price: {post.price} RM</p>
                                 {currentTaskerId === post.tasker_id && (
                                     <div className="post-actions">
 

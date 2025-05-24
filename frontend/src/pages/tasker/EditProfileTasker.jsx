@@ -56,9 +56,7 @@ const EditProfileTasker = () => {
         setSuccess('');
 
         try {
-            const response = await axios.post(
-                "http://localhost:3000/tasker-submit",
-                formData,
+            const response = await axios.post("http://localhost:3000/tasker-submit", formData,
                 { withCredentials: true }
             );
 

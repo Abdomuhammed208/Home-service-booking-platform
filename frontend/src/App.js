@@ -20,6 +20,7 @@ import Checkout from './pages/customer/Checkout.jsx';
 import ChatBox from './pages/chat/ChatBox.jsx';
 import CustomerAccount from './pages/users/CustomerAccount.jsx';
 import Conversation from './pages/tasker/Conversation.jsx';
+import Transfer from './pages/users/Transfer.jsx';
 function App() {
 
   return (
@@ -46,6 +47,7 @@ function App() {
      <Route path='/chat/:taskerId' element={<ChatBox/>}/>
      <Route path='/customer/:customerId' element={<CustomerAccount/>}/>
      <Route path='/chatbox/:customerId' element={<Conversation/>}/>
+     <Route path='/tasker/:taskerId/transfer' element={<Transfer/>}/>
      </Routes>
      </BrowserRouter>
     

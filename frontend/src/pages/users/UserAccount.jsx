@@ -82,6 +82,10 @@ function UserAccount() {
 
                 </div>
                 <div className="info-item">
+                <button className="chat-button" onClick={() => navigate(`/tasker/${taskerId}/transfer`)}> Transfer</button>
+
+                </div>
+                <div className="info-item">
                     <span className="info-label">Name:</span>
                     <span className="info-value">{tasker.name}</span>
                 </div>

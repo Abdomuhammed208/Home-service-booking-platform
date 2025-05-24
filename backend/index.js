@@ -97,8 +97,9 @@ app.get("/tasker", async function (req, res) {
   }
 });
 
-app.post("/transfer",async function (req, res) {
+app.post("/tasker/:taskerId/transfer",async function (req, res) {
   const amount = parseFloat(req.body.amount);
+  const taskerId = req.params.taskerId;
   const userId = req.user.email;
   const userTransaction  = await db.query("SELECT name, money FROM users WHERE email = $1",
      [userId]);
@@ -108,9 +109,16 @@ app.post("/transfer",async function (req, res) {
 
   const userResult = await db.query("UPDATE users SET money = $1 WHERE email = $2",
      [totalAmount, userId]);
-  
-// <-------------------------------Incompeleted-------------------------------->
 
+  const taskerTransaction = await db.query("SELECT name, money FROM taskers WHERE id = $1",
+    [taskerId]);
+  const taskerAmount = taskerTransaction.rows[0];
+  const taskerTotalAmount = parseFloat(taskerAmount.money) + parseFloat(amount) || taskerAmount.money;
+  const taskerResult = await db.query("UPDATE taskers SET money = $1 WHERE id = $2",
+    [taskerTotalAmount, taskerId]);
+
+  res.json({ success: true, message: "Transfer successful" });
+  
 });
 
 
@@ -213,7 +221,11 @@ app.get("/tasker/:taskerId", async (req, res) => {
 // <---------------------------BOOK SERVICE------------------------------------>
 
 app.post("/book-service", async function (req, res) {
-  const date = req.body.date + " " + req.body.time;
+  const userId = req.user.id;
+  const taskerId = req.body.taskerId;
+  const postId = req.body.postId;
+  const date = req.body.date;
+  const time  = req.body.time;
   const paymentMethod = req.body.paymentMethod;
   const cardNumber = req.body.cardNumber;
   const cardName = req.body.cardName;
@@ -221,25 +233,45 @@ app.post("/book-service", async function (req, res) {
   const cvv = req.body.cvv;
   const amount = req.body.amount || 0;
   console.log("Booking details: ", req.body);
+
+
   if(paymentMethod === "cash"){
     const paymentstatus = "Unpaied";
-    await db.query("INSERT INTO bookings (date, payment_status, amount, method) VALUES ($1, $2, $3, $4) RETURNING *",
-      [date, paymentstatus, amount, paymentMethod]);
+    await db.query("INSERT INTO bookings (user_id, tasker_id, post_id, date, time, payment_status, amount, method) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+      [userId, taskerId, postId, date, time, paymentstatus, amount, paymentMethod]);
   } else if(paymentMethod === "card"){
     const paymentstatus = "successful";
-   await db.query("INSERT INTO bookings (date, payment_status, amount, method) VALUES ($1, $2, $3, $4) RETURNING *",
-      [date, paymentstatus, amount, paymentMethod]);
-      await db.query("INSERT INTO payments (status, cardnum, cardname, expirydate, cvv, amount, method) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
-        [paymentstatus, cardNumber, cardName, expiryDate, cvv, amount, paymentMethod]);
+   await db.query("INSERT INTO bookings (user_id, tasker_id, post_id, date, time, payment_status, amount, method) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+      [userId, taskerId, postId, date, time, paymentstatus, amount, paymentMethod]);
+      await db.query("INSERT INTO payments (sender_id, receiver_id, status, cardnum, cardname, expirydate, cvv, amount, method) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
+        [userId, taskerId, paymentstatus, cardNumber, cardName, expiryDate, cvv, amount, paymentMethod]);
+
+
   }else if(paymentMethod === "wallet"){
     const paymentstatus = "successful";
-    await db.query("INSERT INTO bookings (date, payment_status, amount, method) VALUES ($1, $2, $3, $4) RETURNING *",
-      [date, paymentstatus, amount, paymentMethod]);
-      await db.query("INSERT INTO payments (status, amount, method) VALUES ($1, $2, $3) RETURNING *",
-        [ paymentstatus,amount, paymentMethod]);
+    await db.query("INSERT INTO bookings (user_id, tasker_id, post_id, date, time, payment_status, amount, method) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+      [userId, taskerId, postId, date, time, paymentstatus, amount, paymentMethod]);
+      await db.query("INSERT INTO payments (sender_id, receiver_id, status, amount, method) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+        [userId, taskerId, paymentstatus, amount, paymentMethod]);
+
+
   }else{
     res.json({ ok: false, message: "Invalid payment method" });
   }
+          // Add money to tasker
+          const taskerData = await db.query("SELECT money FROM taskers WHERE id = $1", [taskerId]);
+          const taskerAmount = taskerData.rows[0];
+          const taskerTotalAmount = parseFloat(taskerAmount.money) + parseFloat(amount) || taskerAmount.money;
+          const taskerResult = await db.query("UPDATE taskers SET money = $1 WHERE id = $2",
+            [taskerTotalAmount, taskerId]);
+
+            // Subtract money from user
+            const userData = await db.query("SELECT money FROM users WHERE id = $1", [userId]);
+            const userAmount = userData.rows[0];
+            const userTotalAmount = parseFloat(userAmount.money) - parseFloat(amount) || userAmount.money;
+            const userResult = await db.query("UPDATE users SET money = $1 WHERE id = $2",
+              [userTotalAmount, userId]);
+
   res.json({ ok: true, message: "Booking submitted successfully" });
 });
 
@@ -390,8 +422,6 @@ app.get("/tasker-profile", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
-
 
 app.post("/tasker-submit", async function (req, res) {
   const submittedName = req.body.name;

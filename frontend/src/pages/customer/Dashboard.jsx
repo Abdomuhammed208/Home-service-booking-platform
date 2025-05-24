@@ -61,16 +61,30 @@ function Dashboard() {
                     ) : posts && posts.length > 0 ? (
                         posts.map((post) => (
                             <div key={post.id} className="post-card">
-                                <h3 onClick={() => navigate(`/tasker/${post.tasker_id}`)} className="post-author">{post.tasker_name}</h3>
+                                <h3 onClick={() => navigate(`/tasker/${post.tasker_id}`)} className="post-author" style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                                    {post.tasker_image ? (
+                                        <img 
+                                            src={`http://localhost:3000${post.tasker_image}`} 
+                                            alt="Profile" 
+                                            style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #eee' }}
+                                        />
+                                    ) : (
+                                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#64748b', border: '2px solid #eee' }}>
+                                            {post.tasker_name ? post.tasker_name.charAt(0).toUpperCase() : '?'}
+                                        </div>
+                                    )}
+                                    {post.tasker_name}
+                                </h3>
                                 <h4 className="post-title">{post.title}</h4>
                                 <p className="post-content">{post.content}</p>
-                                <p className="post-price">Price: {post.price}</p>
+                                <p className="post-price">Price: {post.price} RM</p>
                                 <button 
                                     className='book-btn'
                                     onClick={() => navigate('/checkout', { 
                                         state: { 
                                             postDetails: {
                                                 taskerName: post.tasker_name,
+                                                taskerId: post.tasker_id,
                                                 content: post.content,
                                                 title: post.title,
                                                 price: post.price
