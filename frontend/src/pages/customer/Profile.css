@@ -24,7 +24,7 @@
   right: 0;
   top: 0;
   text-decoration: none;
-  color: #ffffff;
+  color: #000000;
   font-weight: 500;
   padding: 0.5rem 1rem;
   border-radius: 6px;
@@ -156,6 +156,37 @@
 
 .change-photo-button:hover {
   background-color: #006d87;
+}
+
+.back-arrow {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #5F41E4;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+  width: fit-content;
+}
+
+.back-arrow:hover {
+  transform: translateX(-5px);
+  color: #4320df;
+}
+
+.back-arrow .material-symbols-outlined {
+  font-size: 24px;
+  margin-right: 8px;
+  transition: transform 0.3s ease;
+  border: 1px solid #5F41E4;
+  border-radius: 50%;
+  padding: 0.5rem;
+  background-color: #5F41E4;
+  color: #ffffff;
+}
+
+.back-arrow:hover .material-symbols-outlined {
+  transform: translateX(-3px);
 }
 
 @media (max-width: 640px) {

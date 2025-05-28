@@ -222,8 +222,9 @@ app.get("/tasker/:taskerId", async (req, res) => {
 
 app.post("/book-service", async function (req, res) {
   const userId = req.user.id;
+  const userAddress = req.user.address;
   const taskerId = req.body.taskerId;
-  const postId = req.body.postId;
+  //const postId = req.body.postId;
   const date = req.body.date;
   const time  = req.body.time;
   const paymentMethod = req.body.paymentMethod;
@@ -237,20 +238,18 @@ app.post("/book-service", async function (req, res) {
 
   if(paymentMethod === "cash"){
     const paymentstatus = "Unpaied";
-    await db.query("INSERT INTO bookings (user_id, tasker_id, post_id, date, time, payment_status, amount, method) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
-      [userId, taskerId, postId, date, time, paymentstatus, amount, paymentMethod]);
+    await db.query("INSERT INTO bookings (user_id, tasker_id, date, time, payment_status, amount, method) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+      [userId, taskerId, date, time, paymentstatus, amount, paymentMethod]);
   } else if(paymentMethod === "card"){
     const paymentstatus = "successful";
-   await db.query("INSERT INTO bookings (user_id, tasker_id, post_id, date, time, payment_status, amount, method) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
-      [userId, taskerId, postId, date, time, paymentstatus, amount, paymentMethod]);
+   await db.query("INSERT INTO bookings (user_id, tasker_id, date, time, payment_status, amount, method) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+      [userId, taskerId, date, time, paymentstatus, amount, paymentMethod]);
       await db.query("INSERT INTO payments (sender_id, receiver_id, status, cardnum, cardname, expirydate, cvv, amount, method) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
         [userId, taskerId, paymentstatus, cardNumber, cardName, expiryDate, cvv, amount, paymentMethod]);
-
-
   }else if(paymentMethod === "wallet"){
     const paymentstatus = "successful";
-    await db.query("INSERT INTO bookings (user_id, tasker_id, post_id, date, time, payment_status, amount, method) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
-      [userId, taskerId, postId, date, time, paymentstatus, amount, paymentMethod]);
+    await db.query("INSERT INTO bookings (user_id, tasker_id, date, time, payment_status, amount, method) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+      [userId, taskerId, date, time, paymentstatus, amount, paymentMethod]);
       await db.query("INSERT INTO payments (sender_id, receiver_id, status, amount, method) VALUES ($1, $2, $3, $4, $5) RETURNING *",
         [userId, taskerId, paymentstatus, amount, paymentMethod]);
 
@@ -271,6 +270,16 @@ app.post("/book-service", async function (req, res) {
             const userTotalAmount = parseFloat(userAmount.money) - parseFloat(amount) || userAmount.money;
             const userResult = await db.query("UPDATE users SET money = $1 WHERE id = $2",
               [userTotalAmount, userId]);
+
+
+              await db.query(`
+                INSERT INTO notifications (receiver_id, role, message, address)
+                VALUES ($1, 'tasker', $2, $3)
+              `, [
+                taskerId,
+                `${req.user.name} booked your service on ${date} at ${time} in ${userAddress}.`
+                ]);
+              
 
   res.json({ ok: true, message: "Booking submitted successfully" });
 });
@@ -399,6 +408,19 @@ app.post("/delete-account", async function (req, res) {
 
 // });
 
+
+app.get("/notification/:userId", async (req, res) => {
+  const userId = req.params.userId;
+  const result = await db.query(
+    "SELECT * FROM notifications WHERE receiver_id = $1",
+    [userId]
+  );
+  const notifications = result.rows;  
+
+  res.json({success: true, notifications: notifications});
+});
+
+
 app.get("/tasker-profile", async (req, res) => {
   try {
     const taskerEmail = req.user.email; // assuming user is authenticated
@@ -508,13 +530,12 @@ app.post("/login", (req, res, next) => {
       }
 
       const { id, name, email, mobile, money, city } = user;
-      const role = req.user.role;
-      
-      console.log("Login successful: ", name, email, mobile, money, city, role);
+      const role = user.role;
+      console.log("Login successful: ", "Name: " + name, "\n Email: " + email, "\n Mobile: " + mobile, "\n Role: " + role, "\n Id: " + id);
 
       return res.status(200).json({
         success: true,
-        loginMessage: "Login successful, Hello !",
+        loginMessage: `Login successful, Hello ${name}!`,
         user: { name, email, mobile, money, city, role },
       });
     });
@@ -523,10 +544,6 @@ app.post("/login", (req, res, next) => {
 
 app.get("/profile", async function (req, res) {
   try {
-    if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-    
     const result = await db.query(
       "SELECT id, name, email, mobile, money, profile_image FROM users WHERE email = $1",
       [req.user.email]
@@ -606,7 +623,7 @@ app.post("/tasker-signup", upload.single('profile_image'), async function (req, 
 
 app.post("/signup", upload.single('profile_image'), async (req, res) => {
   try {
-    const { name, mobile, email, password } = req.body;
+    const { name, mobile, email, password, address, city } = req.body;
     const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
 
     // Check if user already exists
@@ -619,12 +636,12 @@ app.post("/signup", upload.single('profile_image'), async (req, res) => {
     // Hash password and create user
     const hash = await bcrypt.hash(password, saltRounds);
     const result = await db.query(
-      "INSERT INTO users (name, mobile, email, password, money, profile_image) VALUES ($1, $2, $3, $4, DEFAULT, $5) RETURNING *",
-      [name, mobile, email, hash, imagePath]
+      "INSERT INTO users (name, mobile, email, password, money, profile_image, address, city) VALUES ($1, $2, $3, $4, DEFAULT, $5, $6, $7) RETURNING *",
+      [name, mobile, email, hash, imagePath, address, city]
     );
 
     const user = result.rows[0];
-    res.status(201).json({ message: "User registered successfully", user });
+    res.status(201).json({ success: true, message: "User registered successfully", user });
   } catch (err) {
     console.error("Signup error:", err);
     res.status(500).json({ message: "Error during registration" });
@@ -799,6 +816,7 @@ app.get("/tasker/:taskerId/feedback", async (req, res) => {
 
 // <------------------------------CHAT--------------------------------->
 
+
 app.get("/chat/:taskerId", async (req, res) => {
   const taskerId = req.params.taskerId;
   const customerId = req.user.id;
@@ -815,16 +833,48 @@ app.get("/chat/:customerId", async (req, res) => {
   res.json({ success: true, messages });
 });
 
+
 app.post("/chat/send", async (req, res) => {
-  const message = req.body.message;
-  const customer_id = req.body.customer_id;
-  const tasker_id = req.body.tasker_id;
-  const sender_id = req.body.sender_id;
-  const receiver_id = req.body.receiver_id;
+  const { message, customer_id, tasker_id, sender_id, receiver_id } = req.body;
+
   const result = await db.query(
     "INSERT INTO messages (message, customer_id, tasker_id, sender_id, receiver_id) VALUES ($1, $2, $3, $4, $5) RETURNING *",
     [message, customer_id, tasker_id, sender_id, receiver_id]
   );
+
+  let userRole = null;
+  const checkCustomer = await db.query("SELECT id, name FROM users WHERE id = $1", [req.user.id]);
+  const checkTasker = await db.query("SELECT id, name FROM taskers WHERE id = $1", [req.user.id]);
+
+  if (checkCustomer.rows.length > 0) {
+    userRole = 'user';
+  } else if (checkTasker.rows.length > 0) {
+    userRole = 'tasker';
+  } else {
+    return res.status(400).json({ error: "Sender not found in either table." });
+  }
+
+  const senderName = req.user.name;
+
+  // Insert notification based on inferred role
+  if (userRole === 'user') {
+    await db.query(`
+      INSERT INTO notifications (receiver_id, role, message)
+      VALUES ($1, 'tasker', $2)
+    `, [
+      tasker_id,
+      `${senderName} sent you a message.`
+    ]);
+  } else if (userRole === 'tasker') {
+    await db.query(`
+      INSERT INTO notifications (receiver_id, role, message)
+      VALUES ($1, 'user', $2)
+    `, [
+      customer_id,
+      `${senderName} sent you a message.`
+    ]);
+  }
+
   res.json({ success: true, message: result.rows[0] });
 });
 
@@ -860,6 +910,47 @@ app.get('/messages/thread', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
+
+
+app.get("/order/:userId", async (req, res) => {
+  const userId = req.params.userId;
+  const result = await db.query("SELECT * FROM bookings WHERE user_id = $1", [userId]);
+  const orders = result.rows;
+  res.json({ success: true, orders });
+});
+
+
+// app.get("/order/:taskerId", async (req, res) => {
+//   const taskerId = req.params.taskerId;
+//   const result = await db.query("SELECT * FROM bookings WHERE tasker_id = $1", [taskerId]);
+//   const order = result.rows;
+//   res.json({ success: true, order });
+// });
+
+
+
+
+
+app.get("/conversation-list/:userId", async (req, res) => {
+  try {
+    const currentUserId = req.user.id; 
+
+    const result = await db.query(
+      `SELECT DISTINCT u.id, u.name, u.email, u.profile_image, m.message, m.timestamp
+       FROM taskers u
+       JOIN messages m ON u.id = m.receiver_id
+       WHERE m.sender_id = $1`,
+      [currentUserId]
+    );
+    const data = result.rows; 
+    res.json(data);
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

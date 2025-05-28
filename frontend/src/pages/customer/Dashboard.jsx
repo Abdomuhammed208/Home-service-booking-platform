@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import './dashboard.css';
 import { useLocation, useNavigate } from "react-router-dom";
+import axios from 'axios';
+import { FaTasks, FaBell, FaCheckCircle, FaTimes, FaExclamationCircle } from "react-icons/fa";
+import ConversationList from '../users/ConversationList';
 
 function Dashboard() {
     const location = useLocation();
@@ -9,7 +12,8 @@ function Dashboard() {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    
+    const [userId, setUserId] = useState('');
+    const [userProfile, setUserProfile] = useState(null);
 
     useEffect(() => {
         const fetchPosts = async () => {
@@ -18,9 +22,11 @@ function Dashboard() {
                     credentials: 'include'
                 });
                 const data = await response.json();
-                console.log("Received data:", data);
                 if (data.success) {
-                    setPosts(data.posts);
+                    const sortedPosts = data.posts.sort((a, b) => {
+                        return new Date(b.created_at) - new Date(a.created_at);
+                    });
+                    setPosts(sortedPosts);
                 } else {
                     setError(data.message || 'Failed to fetch posts');
                 }
@@ -32,79 +38,184 @@ function Dashboard() {
             }
         };
 
+        const fetchUser = async () => {
+            try {
+                const response = await axios.get('http://localhost:3000/profile', {
+                    withCredentials: true
+                });
+                setUserId(response.data.user.id);
+                setUserProfile(response.data.user);
+            } catch (error) {
+                console.error('Error fetching user profile:', error);
+            }
+        };
+
+        fetchUser();
         fetchPosts();
     }, []);
 
-    return (
-        <div>
-            <div className="dashboard-header">
-                <h1 className="dashboard-title">User Dashboard</h1>
-                <a href="/profile" className="profile-link">View Profile</a>
-            </div>
+    const getInitials = (name) => {
+        if (!name) return '?';
+        return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    };
 
+    return (
+        <div className="tasker-dashboard">
+            <header className="dashboard-header">
+                <div className="header-container">
+                    <div className="header-left">
+                        <FaTasks className="header-icon" />
+                        <h1>User Dashboard</h1>
+                    </div>
+                    <div className="header-left">
+                       <a href={`/order/${userId}`} className="order-history-link">View orders</a>
+                    </div>
+                    {/* <div className="header-left">
+                       <a href={`/conversation-list/${userId}`} className="order-history-link">View conversation</a>
+                    </div> */}
+                    <div className="header-right">
+                        <button onClick={() => navigate(`/notification/${userId}`)} className="notification-btn" aria-label="Notifications">
+                            <FaBell className="notification-link" />
+                        </button>
+                        <div 
+                            className="profile-section"
+                            onClick={() => navigate("/profile")}
+                        >
+                            {userProfile?.image ? (
+                                <img 
+                                    src={`http://localhost:3000${userProfile.image}`} 
+                                    alt="Profile" 
+                                    className="profile-img"
+                                />
+                            ) : (
+                                <div className="profile-initials">
+                                    {getInitials(userProfile?.name)}
+                                </div>
+                            )}
+                            <span className="profile-name">
+                                {userProfile?.name || 'Profile'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            {/* Success Message */}
             {message && (
                 <div className="success-message">
-                    {message}
+                    <div className="message-content">
+                        <div className="message-text">
+                            <FaCheckCircle className="message-icon" />
+                            <p>{message}</p>
+                        </div>
+                        <button className="close-message">
+                            <FaTimes />
+                        </button>
+                    </div>
                 </div>
             )}
 
+            {/* Error Message */}
             {error && (
                 <div className="error-message">
-                    {error}
+                    <div className="message-content">
+                        <div className="message-text">
+                            <FaExclamationCircle className="message-icon" />
+                            <p>{error}</p>
+                        </div>
+                        <button className="close-message">
+                            <FaTimes />
+                        </button>
+                    </div>
                 </div>
             )}
 
-            <div className="dashboard-container">
-                <div className="posts-grid">
-                    {loading ? (
-                        <div className="loading-message">Loading posts...</div>
-                    ) : posts && posts.length > 0 ? (
-                        posts.map((post) => (
-                            <div key={post.id} className="post-card">
-                                <h3 onClick={() => navigate(`/tasker/${post.tasker_id}`)} className="post-author" style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                                    {post.tasker_image ? (
-                                        <img 
-                                            src={`http://localhost:3000${post.tasker_image}`} 
-                                            alt="Profile" 
-                                            style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #eee' }}
-                                        />
-                                    ) : (
-                                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#64748b', border: '2px solid #eee' }}>
-                                            {post.tasker_name ? post.tasker_name.charAt(0).toUpperCase() : '?'}
-                                        </div>
-                                    )}
-                                    {post.tasker_name}
-                                </h3>
-                                <h4 className="post-title">{post.title}</h4>
-                                <p className="post-content">{post.content}</p>
-                                <p className="post-price">Price: {post.price} RM</p>
-                                <button 
-                                    className='book-btn'
-                                    onClick={() => navigate('/checkout', { 
-                                        state: { 
-                                            postDetails: {
-                                                taskerName: post.tasker_name,
-                                                taskerId: post.tasker_id,
-                                                content: post.content,
-                                                title: post.title,
-                                                price: post.price
-                                            }
-                                        }
-                                    })}
-                                >
-                                    Book now
-                                </button>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="no-posts-message">
-                            <p>No posts found</p>
-                            <p>Check back later for new posts from taskers!</p>
-                            
+            {/* Main Content */}
+            <main className="dashboard-main">
+                {/* Task Posts Section */}
+                <div className="posts-section">
+                    <div className="section-header">
+                        <h2>Available Tasks</h2>
+                        <div className="section-actions">
+                            <button className="action-btn">
+                                <i className="fas fa-filter"></i>
+                            </button>
+                            <button className="action-btn">
+                                <i className="fas fa-sort"></i>
+                            </button>
                         </div>
-                    )}
+                    </div>
+
+                    {/* Task Posts Grid */}
+                    <div className="posts-grid">
+                        {loading ? (
+                            <div className="loading-message">
+                                <div className="loading-spinner"></div>
+                                <p>Loading posts...</p>
+                            </div>
+                        ) : posts && posts.length > 0 ? (
+                            posts.map((post) => (
+                                <div key={post.id} className="post-card">
+                                    <div className="post-header">
+                                        <div onClick={() => navigate(`/tasker/${post.tasker_id}`)} className="post-author">
+                                            {post.tasker_image ? (
+                                                <img 
+                                                    src={`http://localhost:3000${post.tasker_image}`} 
+                                                    alt="Profile" 
+                                                    className="author-img"
+                                                />
+                                            ) : (
+                                                <div className="author-initials">
+                                                    {getInitials(post.tasker_name)}
+                                                </div>
+                                            )}
+                                            <span className="author-name">{post.tasker_name}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <h3 className="post-title">{post.title}</h3>
+                                    <p className="post-content">{post.content}</p>
+                                    
+                                    <div className="post-footer">
+                                        <div className="post-meta">
+                                            <p className="post-date">
+                                                Posted: {new Date(post.created_at).toLocaleString()}
+                                            </p>
+                                        </div>
+                                        <div className="post-actions">
+                                            <p className="post-price">{post.price} RM</p>
+                                            <button 
+                                                className="book-btn"
+                                                onClick={() => navigate('/checkout', { 
+                                                    state: { 
+                                                        postDetails: {
+                                                            taskerName: post.tasker_name,
+                                                            taskerId: post.tasker_id,
+                                                            content: post.content,
+                                                            title: post.title,
+                                                            price: post.price
+                                                        }
+                                                    }
+                                                })}
+                                            >
+                                                Book now
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="no-posts">
+                                <p className="no-posts-title">No posts found</p>
+                                <p className="no-posts-subtitle">Check back later for new posts from taskers!</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+
+                {/* Conversations Section */}
+                <ConversationList />
+            </main>
         </div>
     );
 }

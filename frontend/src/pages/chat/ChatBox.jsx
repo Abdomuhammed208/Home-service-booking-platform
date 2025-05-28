@@ -95,7 +95,10 @@ function ChatBox() {
     return (
         <div className="chat-container">
             <div className="chat-header">
-                <h2>Chat with {tasker?.name}</h2>
+                    <a href={`/dashboard`} className="back-arrow">
+                    <span className="material-symbols-outlined">arrow_back</span>
+                </a>
+                <h2>Chat with <a href={`/tasker/${taskerId}`}>{tasker?.name}</a></h2>
             </div>
 
             <div className="messages-container">

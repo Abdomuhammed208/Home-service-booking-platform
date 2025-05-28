@@ -91,6 +91,10 @@ function Profile() {
 
   return (
     <div className="profile-container">
+      <a href="/dashboard" className="back-arrow">
+        <span className="material-symbols-outlined">arrow_back</span>
+        Back to Dashboard
+      </a>
       <div className="profile-header">
         <h2>User Profile</h2>
         <a href="/edit-profile" className="edit-link">Edit Profile</a>

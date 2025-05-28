@@ -5,7 +5,7 @@ import './login.css';
 
 const Login = () => {
   const location = useLocation();
-  const succefulMessage = location.state?.message;
+  const succefulMessage = location.state?.succefulMessage;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");

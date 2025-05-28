@@ -19,8 +19,10 @@ import UserAccount from './pages/users/UserAccount.jsx';
 import Checkout from './pages/customer/Checkout.jsx';
 import ChatBox from './pages/chat/ChatBox.jsx';
 import CustomerAccount from './pages/users/CustomerAccount.jsx';
-import Conversation from './pages/tasker/Conversation.jsx';
 import Transfer from './pages/users/Transfer.jsx';
+import Notification from './pages/customer/Notification.jsx';
+import Order from './pages/users/Order.jsx';
+import ConversationList from './pages/users/ConversationList.jsx';
 function App() {
 
   return (
@@ -46,8 +48,10 @@ function App() {
      <Route path='/checkout' element={<Checkout/>}/>
      <Route path='/chat/:taskerId' element={<ChatBox/>}/>
      <Route path='/customer/:customerId' element={<CustomerAccount/>}/>
-     <Route path='/chatbox/:customerId' element={<Conversation/>}/>
      <Route path='/tasker/:taskerId/transfer' element={<Transfer/>}/>
+     <Route path='/notification/:userId' element={<Notification/>}/>
+     <Route path='/order/:userId' element={<Order/>}/>
+     <Route path='/conversation-list/:userId' element={<ConversationList/>}/>
      </Routes>
      </BrowserRouter>
     

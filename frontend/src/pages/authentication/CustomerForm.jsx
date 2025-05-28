@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import SwitchUser from './SwitchUser';
 import { useNavigate } from 'react-router-dom';
 import './signup.css';
+import axios from 'axios';
 function CustomerForm({ setUserType }) {
     const navigate = useNavigate();
     const [message, setMessage] = useState();
@@ -10,6 +11,8 @@ function CustomerForm({ setUserType }) {
         email: "",
         mobile: "",
         password: "",
+        address: "",
+        city: "",
     });
     const [selectedImage, setSelectedImage] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
@@ -36,28 +39,36 @@ function CustomerForm({ setUserType }) {
             formDataToSend.append('email', formData.email);
             formDataToSend.append('mobile', formData.mobile);
             formDataToSend.append('password', formData.password);
+            formDataToSend.append('address', formData.address);
+            formDataToSend.append('city', formData.city);
             if (selectedImage) {
                 formDataToSend.append('profile_image', selectedImage);
             }
 
-            const response = await fetch("http://localhost:3000/signup", {
-                method: "POST",
-                body: formDataToSend,
+            const response = await axios.post("http://localhost:3000/signup", formDataToSend, {
+                withCredentials: true
             });
 
-            const data = await response.json();
-            if (!response.ok) {
-                setMessage(data.message || "Something went wrong.");
-            } else {
-                setMessage(data.message);
-                setFormData({ name: "", email: "", mobile: "", password: "" });
+            if (response.status === 200) {
+                setMessage(response.data.message);
+                setFormData({ 
+                    name: "", 
+                    email: "", 
+                    mobile: "", 
+                    password: "",
+                    address: "",
+                    city: ""
+                });
                 setSelectedImage(null);
                 setPreviewUrl(null);
-                navigate("/login");
+            } else {
+                setMessage(response.data.message || "Something went wrong.");
             }
+            navigate("/login", {state: {succefulMessage: "Account has been registered successfully"}});
+
         } catch (err) {
             console.error("Frontend error:", err);
-            setMessage("Could not connect to the server.");
+            setMessage(err.response?.data?.message || "Could not connect to the server.");
         }
     };
 
@@ -93,6 +104,17 @@ function CustomerForm({ setUserType }) {
                     </div>
                     <div className="input-wrapper">
                         <input className="input-field" placeholder="Email" type="email" onChange={handleChange} name="email" required />
+                    </div>
+
+                    <div className="city-select-wrapper">
+                            <select name="city" onChange={handleChange} className="city-select">
+                                <option value="">Select your city</option>
+                                <option value="cyberjaya">Cyberjaya</option>
+                                <option value="petalingjaya">Petaling Jaya</option>
+                            </select>
+                        </div>
+                    <div className="input-wrapper">
+                        <input className="input-field" placeholder="Your address" type="text" onChange={handleChange} name="address" required />
                     </div>
                     <div className="input-wrapper">
                         <input className="input-field" placeholder="Password" type="password" onChange={handleChange} name="password" required />
