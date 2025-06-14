@@ -1,20 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-//import './Conversation.css';
+import '../users/Conversation.css';
 import axios from 'axios';
 
-function ConversationList() {
+function ChatList() {
     const [conversations, setConversations] = useState([]);
     const navigate = useNavigate();
-    const { userId } = useParams();
+    const { taskerId } = useParams();
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get(`http://localhost:3000/conversation-list/${userId}`, {
+                const response = await axios.get(`http://localhost:3000/chat-list/${taskerId}`, {
                     withCredentials: true
                 });
-                // Filter out duplicate conversations by user ID
                 const uniqueConversations = response.data.reduce((acc, current) => {
                     const existingConversation = acc.find(item => item.id === current.id);
                     if (!existingConversation) {
@@ -29,7 +28,7 @@ function ConversationList() {
         };
 
         fetchData();
-    }, [userId]);
+    }, [taskerId]);
 
     const getLastMessageTime = (timestamp) => {
         if (!timestamp) return '';
@@ -49,20 +48,12 @@ function ConversationList() {
         return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
     };
 
-    const handleConversationClick = (taskerId) => {
-        navigate(`/chat/${taskerId}`);
+    const handleConversationClick = (customerId) => {
+        navigate(`/chatbox/${customerId}`);
     };
 
     return (
         <div className="conversations-container">
-            <div className="conversations-header">
-                {/* <a href="/dashboard" className="back-arrow">
-                    <span className="material-symbols-outlined">arrow_back</span>
-                    Back to Dashboard
-                </a> */}
-                <h2>My Conversations</h2>
-            </div>
-
             <div className="conversations-list">
                 {conversations.length === 0 ? (
                     <div className="no-conversations">
@@ -109,4 +100,4 @@ function ConversationList() {
     );
 }
 
-export default ConversationList; 
+export default ChatList; 

@@ -1,7 +1,6 @@
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
-import './login.css';
 
 const Login = () => {
   const location = useLocation();
@@ -26,9 +25,9 @@ const Login = () => {
       console.log(response.data.message);
       console.log(user.role);
       if (user.role === "user") {
-        navigate("/dashboard", { state: {loginMessage: loginMessage }});
+        navigate("/dashboard", { state: { loginMessage: loginMessage } });
       } else if (user.role === "tasker") {
-        navigate("/tasker-dashboard", { state: {loginMessage: loginMessage}  } );
+        navigate("/tasker-dashboard", { state: { loginMessage: loginMessage } });
       } else if (user.role === "admin") {
         navigate("/admin");
       } else {
@@ -36,68 +35,143 @@ const Login = () => {
       }
     } catch (error) {
       if (error.response && error.response.data && error.response.data.message) {
-        setError(error.response.data.message); 
+        setError(error.response.data.message);
       } else {
         setError("An error occurred during login.");
       }
     }
   };
 
+  const styles = {
+    container: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: "100vh",
+      backgroundColor: "#f9fafb",
+      fontFamily: "sans-serif"
+    },
+    formBox: {
+      backgroundColor: "#fff",
+      padding: "40px",
+      borderRadius: "8px",
+      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+      width: "100%",
+      maxWidth: "400px"
+    },
+    title: {
+      fontSize: "2rem",
+      fontWeight: "bold",
+      marginBottom: "1.5rem",
+      textAlign: "center"
+    },
+    inputWrapper: {
+      position: "relative",
+      marginBottom: "1rem"
+    },
+    input: {
+      width: "100%",
+      padding: "12px 16px",
+      borderRadius: "5px",
+      border: "1px solid #ddd",
+      fontSize: "1rem"
+    },
+    button: {
+      width: "100%",
+      padding: "12px",
+      backgroundColor: "#4f46e5",
+      color: "white",
+      border: "none",
+      borderRadius: "5px",
+      fontSize: "1rem",
+      cursor: "pointer",
+      marginTop: "1rem"
+    },
+    text: {
+      marginTop: "1rem",
+      fontSize: "0.9rem",
+      textAlign: "center"
+    },
+    link: {
+      color: "#4f46e5",
+      textDecoration: "none",
+      marginLeft: "5px"
+    },
+    error: {
+      color: "red",
+      textAlign: "center",
+      marginBottom: "1rem"
+    },
+    success: {
+      color: "green",
+      textAlign: "center",
+      marginBottom: "1rem"
+    }
+  };
+
+  const backgroundStyle = {
+    minHeight: "100vh",
+    width: "100vw",
+    position: "fixed",
+    top: 0,
+    left: 0,
+    zIndex: 0,
+    backgroundColor: "#e5e5f7",
+    backgroundImage: "repeating-linear-gradient(45deg, #3fde89, #3fde89 11.5px, #e5e5f7 11.5px, #e5e5f7 57.5px)",
+    backgroundAttachment: "fixed",
+    backgroundRepeat: "repeat"
+  };
+
+  const contentWrapperStyle = {
+    position: "relative",
+    zIndex: 1,
+    minHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  };
+
   return (
-    <div>
-      <header>
-        <nav className="navbar">
-          <div className="navdiv">
-            <div className="logo">
-              <a href="/">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" viewBox="0 0 40 40">
-                  <path fill="#0088A9" d="M20 0c11.046 0 20 8.954 20 20v14a6 6 0 0 1-6 6H21v-8.774c0-2.002.122-4.076 1.172-5.78a10 10 0 0 1 6.904-4.627l.383-.062a.8.8 0 0 0 0-1.514l-.383-.062a10 10 0 0 1-8.257-8.257l-.062-.383a.8.8 0 0 0-1.514 0l-.062.383a9.999 9.999 0 0 1-4.627 6.904C12.85 18.878 10.776 19 8.774 19H.024C.547 8.419 9.29 0 20 0Z"></path>
-                  <path fill="#F06225" d="M0 21h8.774c2.002 0 4.076.122 5.78 1.172a10.02 10.02 0 0 1 3.274 3.274C18.878 27.15 19 29.224 19 31.226V40H6a6 6 0 0 1-6-6V21ZM40 2a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"></path>
-                </svg>
-              </a>
-            </div>
-          </div>
-        </nav>
-      </header>
-      {succefulMessage && <p style={{ color: "green" }}>{succefulMessage}</p>}
-      <form className="login-form" onSubmit={handleLogin}>
-        <div className="container">
-          <div className="login-container">
-            <h1 className="form-title">Login</h1>
-            <div className="input-wrapper">
-              <input
-                className="input-field"
-                placeholder="Email"
-                type="email"
-                onChange={(e) => setEmail(e.target.value)}
-                name="email"
-                required
-              />
-              <span className="material-symbols-outlined">mail</span>
-            </div>
+    <>
+      <div style={backgroundStyle}></div>
+      <div style={contentWrapperStyle}>
+        <form style={styles.formBox} onSubmit={handleLogin}>
+          <h1 style={styles.title}>Login</h1>
 
-            <div className="input-wrapper">
-              <input
-                className="input-field"
-                placeholder="Password"
-                type="password"
-                onChange={(e) => setPassword(e.target.value)}
-                name="password"
-                required
-              />
-              <span className="material-symbols-outlined">lock</span>
-            </div>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            <button className="login-button" type="submit">Login</button>
-
-            <p className="login-text">
-              Don't have an account?
-              <a href="/signup"> Here</a>
-            </p>
+          <div style={styles.inputWrapper}>
+            <input
+              style={styles.input}
+              placeholder="Email"
+              type="email"
+              onChange={(e) => setEmail(e.target.value)}
+              name="email"
+              required
+            />
           </div>
-        </div>
-      </form>
-    </div>
+
+          <div style={styles.inputWrapper}>
+            <input
+              style={styles.input}
+              placeholder="Password"
+              type="password"
+              onChange={(e) => setPassword(e.target.value)}
+              name="password"
+              required
+            />
+          </div>
+
+          {error && <p style={styles.error}>{error}</p>}
+
+          <button style={styles.button} type="submit">Login</button>
+
+          <p style={styles.text}>
+            Don't have an account?
+            <a href="/signup" style={styles.link}>Here</a>
+          </p>
+        </form>
+      </div>
+    </>
   );
 };
 

@@ -21,12 +21,12 @@ const Checkout = () => {
     });
     // Time slots for selection
     const timeSlots = [
-        { label: '8:00 AM - 10:00 AM', value: '8-10', disabled: false },
-        { label: '10:00 AM - 12:00 PM', value: '10-12', disabled: false },
-        { label: '12:00 PM - 2:00 PM', value: '12-14', disabled: true },
-        { label: '2:00 PM - 4:00 PM', value: '14-16', disabled: false },
-        { label: '4:00 PM - 6:00 PM', value: '16-18', disabled: false },
-        { label: '6:00 PM - 8:00 PM', value: '18-20', disabled: false },
+        { label: '8:00 AM - 10:00 AM', value: '8-10 AM', disabled: false },
+        { label: '10:00 AM - 12:00 PM', value: '10-12 AM', disabled: false },
+        { label: '12:00 PM - 2:00 PM', value: '12-14 PM', disabled: true },
+        { label: '2:00 PM - 4:00 PM', value: '02-04 PM', disabled: false },
+        { label: '4:00 PM - 6:00 PM', value: '04-06 PM', disabled: false },
+        { label: '6:00 PM - 8:00 PM', value: '06-08 PM', disabled: false },
     ];
     useEffect(() => {
         fetchWalletBalance();
@@ -39,17 +39,17 @@ const Checkout = () => {
             [name]: value
         }));
     };
-
     const handleSubmit = async (e)  => {
         e.preventDefault();
         try {
             const response = await axios.post('http://localhost:3000/book-service', formData, {
                 withCredentials: true
             });
+            navigate('/dashboard');
+
             if(response.data.success){
                 console.log('Form submitted:', formData);
                 alert('Booking submitted successfully!');
-                navigate('/dashboard');
             }else{
                 alert(response.data.message || 'Booking failed!');
             }
@@ -88,11 +88,11 @@ const Checkout = () => {
                     </div>
                     <div className="info-item">
                         <span className="label">Mobile:</span>
-                        {/* <span className="value">{postDetails.service}</span> */}
+                        <span className="value">{postDetails.taskerMobile}</span>
                     </div>
                     <div className="info-item">
                         <span className="label">Service:</span>
-                        <span className="value">{postDetails.taskerName}</span>
+                        <span className="value">{postDetails.taskerService}</span>
                     </div>
                     <div className="info-item">
                         <span className="label">Amount:</span>
@@ -272,7 +272,7 @@ const Checkout = () => {
                     )}
                 </div>
 
-                <button onClick={()=>navigate('/dashboard')} type="submit" className="submit-button">
+                <button type="submit" className="submit-button">
                     Submit Booking
                 </button>
             </form>

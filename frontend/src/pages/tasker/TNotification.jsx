@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import './Notification.css';
 import { useParams, useNavigate } from 'react-router-dom';
 
-const Notification = () => {
+const TNotification = () => {
   const [notifications, setNotifications] = useState([]);
   const userId = useParams().userId;
   const navigate = useNavigate();
@@ -21,7 +20,10 @@ const Notification = () => {
 
   const handleNotificationClick = (notification) => {
     if (notification.message.includes('sent you a message') && notification.related_user_id) {
-      navigate(`/chat/${notification.related_user_id}`);
+      navigate(`/chatbox/${notification.related_user_id}`);
+    }
+    if (notification.message.includes('booked your service')) {
+      navigate(`/allorder/${notification.related_user_id}`);
     }
   };
 
@@ -97,7 +99,7 @@ const Notification = () => {
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
-        <a href="/dashboard" style={backLinkStyle}>
+        <a href="/tasker-dashboard" style={backLinkStyle}>
           <span className="material-symbols-outlined">arrow_back</span>
           Back to Dashboard
         </a>
@@ -129,4 +131,4 @@ const Notification = () => {
   );
 };
 
-export default Notification; 
+export default TNotification; 

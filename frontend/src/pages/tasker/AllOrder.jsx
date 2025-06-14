@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import './Order.css';
 import { useParams } from 'react-router-dom';
 
 const containerStyle = {
@@ -120,12 +119,12 @@ const noOrdersStyle = {
   padding: '2.5rem 0'
 };
 
-const Order = () => {
+const AllOrder = () => {
   const [orders, setOrders] = useState([]);
-  const userId = useParams().userId;
-  
+  const taskerId = useParams().taskerId;
+
   useEffect(() => {
-    fetch(`http://localhost:3000/order/${userId}`, {
+    fetch(`http://localhost:3000/allorder/${taskerId}`, {
       credentials: 'include'
     })
       .then(res => res.json())
@@ -139,20 +138,20 @@ const Order = () => {
       .catch(error => {
         console.error('Error fetching orders:', error);
       });
-  }, [userId]);
+  }, [taskerId]);
 
-  const handleCancelOrder = (orderId) => {
-    if (window.confirm("Are you sure you want to cancel this order?")) {
-      fetch(`http://localhost:3000/cancel-order`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ id: orderId }),
-        credentials: 'include'
-      });
-    }
+  const handleCompleteOrder = (orderId) => {
+    console.log("This is the order id: " + orderId);
+    fetch(`http://localhost:3000/complete-order`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({id: orderId }),
+      credentials: 'include'
+    });
   };
+
   const getStatusColor = (status) => {
     if (!status) return '#666';
     switch (status.toLowerCase()) {
@@ -167,11 +166,25 @@ const Order = () => {
     }
   };
 
+  const getTimeElapsed = (dateString) => {
+    const now = new Date();
+    const created = new Date(dateString);
+    const diffInSeconds = Math.floor((now - created) / 1000);
+    if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} days ago`;
+  };
+
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
-        <a href={`/dashboard`} style={backLinkStyle}>
+        <a href={`/tasker-dashboard`} style={backLinkStyle}>
           <span className="material-symbols-outlined">arrow_back</span>
+          Back to Dashboard
         </a>
         <h2 style={titleStyle}>My Orders</h2>
         <div style={orderListStyle}>
@@ -192,23 +205,25 @@ const Order = () => {
                 <div style={orderDetailsStyle}>
                   <div style={orderInfoStyle}>
                     <p><strong>Order ID:</strong> B{order.id || 'N/A'}</p>
-                    <p><strong>Service:</strong> {order.tasker_service || 'N/A'}</p>
-                    <p><strong>Tasker:</strong> {order.tasker_name || 'N/A'}</p>
-                    <p><strong>Price:</strong> {order.amount ? `${order.amount} RM` : '0 RM'} </p>
+                    <p><strong>User:</strong> {order.user_name || 'N/A'}</p>
+                    <p><strong>Address:</strong> {order.user_address || 'N/A'} - {order.user_city || 'N/A'}</p>
+                    <p><strong>Price:</strong> {order.amount ? `${order.amount} RM` : '0 RM'}</p>
                     <p><strong>Payment Method:</strong> {order.method || 'N/A'}</p>
                     <p><strong>Payment Status:</strong> {order.payment_status || 'N/A'}</p>
                     <p><strong>Time:</strong> {order.time || 'N/A'}</p>
                     <p><strong>Date:</strong> {order.date ? new Date(order.date).toLocaleDateString() : 'N/A'}</p>
+                    <p> {order.created_at ? getTimeElapsed(order.created_at) : 'N/A'}</p>
                   </div>
                 </div>
                 {order.booking_status !== 'Cancelled' && order.booking_status !== 'Completed' && (
-                  <div style={orderActionsStyle}>
-                    <button style={viewDetailsBtnStyle} onClick={() => handleCancelOrder(order.id)}>
-                      Cancel Order
-                    </button>
-                  </div>
+                <div style={orderActionsStyle}>
+                <button style={viewDetailsBtnStyle} onClick={() => handleCompleteOrder(order.id)}>
+                  Complete Order
+                </button>
+                </div>
                 )}
               </div>
+
             ))
           )}
         </div>
@@ -217,4 +232,4 @@ const Order = () => {
   );
 };
 
-export default Order; 
+export default AllOrder; 

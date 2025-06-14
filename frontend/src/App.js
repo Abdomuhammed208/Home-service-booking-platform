@@ -23,6 +23,11 @@ import Transfer from './pages/users/Transfer.jsx';
 import Notification from './pages/customer/Notification.jsx';
 import Order from './pages/users/Order.jsx';
 import ConversationList from './pages/users/ConversationList.jsx';
+import AllOrder from './pages/tasker/AllOrder.jsx';
+import ChatList from './pages/tasker/ChatList.jsx';
+import Conversation from './pages/tasker/Conversation.jsx';
+import TNotification from './pages/tasker/TNotification.jsx';
+import VerificationPage from './pages/users/VerificationPage.jsx';
 function App() {
 
   return (
@@ -52,6 +57,11 @@ function App() {
      <Route path='/notification/:userId' element={<Notification/>}/>
      <Route path='/order/:userId' element={<Order/>}/>
      <Route path='/conversation-list/:userId' element={<ConversationList/>}/>
+     <Route path='/allorder/:taskerId' element={<AllOrder/>}/>
+     <Route path='/chat-list/:taskerId' element={<ChatList/>}/>
+     <Route path='/chatbox/:customerId' element={<Conversation/>}/>
+     <Route path='/tasker-notification/:userId' element={<TNotification/>}/>
+     <Route path='/verify/:taskerId' element={<VerificationPage/>}/>
      </Routes>
      </BrowserRouter>
     

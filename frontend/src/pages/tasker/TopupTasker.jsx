@@ -12,7 +12,7 @@ function TopupTasker() {
             axios.post("http://localhost:3000/top-up-tasker", {amount},{
                 withCredentials: true,
             })
-            navigate("/tasker-dashboard");
+            navigate("/tasker-profile");
         }else{
             setError("Invalid Amount")
         }
