@@ -4,7 +4,7 @@ import axios from "axios";
 import {  FaEllipsisV, FaEdit, FaTrash} from "react-icons/fa";
 import { MessageCircle, Package, User, Bell } from 'lucide-react';
 import "./tasker_dashboard.css";
-import ChatList from "./ChatList";
+
 
 
 
@@ -70,7 +70,10 @@ const conversationsContainerStyle = {
 
 const containerStyle = {
   minHeight: '100vh',
-  background: 'linear-gradient(135deg, #fef7ed 0%, #fdf2f8 100%)',
+  backgroundColor: '#d1fae5',
+  backgroundImage: 'radial-gradient(#6b7280 1.3px, #d1fae5 1.3px)',
+  backgroundSize: '26px 26px',
+  opacity: 0.8,
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
 };
 
@@ -348,7 +351,7 @@ function Taskerdashboard() {
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [hoveredPost]);
+    }, [hoveredPost, taskerProfile]);
 
     const handleDeletePost = (postId) => {
         if (window.confirm('Are you sure you want to delete this post?')) {
@@ -377,9 +380,9 @@ function Taskerdashboard() {
                 <div style={navbarContentStyle}>
                     <div style={logoContainerStyle}>
                         <div style={logoStyle}>
-                            <span>T</span>
+                            <span>S</span>
                         </div>
-                        <div style={logoTextStyle}>Tasker Dashboard</div>
+                        <div style={logoTextStyle}>ServEsae</div>
                     </div>
                     {/* Navigation Icons */}
                     <div style={navIconsStyle}>
@@ -395,7 +398,7 @@ function Taskerdashboard() {
                             style={getNavIconButtonStyle(hoveredButton === 'messages')}
                             onMouseEnter={() => setHoveredButton('messages')}
                             onMouseLeave={() => setHoveredButton(null)}
-                            onClick={() => navigate(`/conversation-list/${currentTaskerId}`)}
+                            onClick={() => navigate(`/chat-list/${currentTaskerId}`)}
                         >
                             <MessageCircle size={20} />
                         </button>
@@ -553,9 +556,9 @@ function Taskerdashboard() {
                             onClick={() => navigate(`/chatbox/${conversation.id}`)}
                           >
                             <div style={conversationHeaderStyle}>
-                              {conversation.user_image ? (
+                              {conversation.profile_image ? (
                                 <img 
-                                  src={`http://localhost:3000${conversation.user_image}`} 
+                                  src={`http://localhost:3000${conversation.profile_image}`} 
                                   alt={conversation.name} 
                                   style={avatarStyle} 
                                 />

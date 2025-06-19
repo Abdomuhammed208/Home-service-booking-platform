@@ -72,6 +72,7 @@ const db = new pg.Client({
   port: 5432,
 });
 db.connect();
+
 app.get("/", (req, res) => {
   res.json({message: "Frontend is connected to backend!!!"});
 });
@@ -81,6 +82,7 @@ app.get("/user", async function (req, res) {
     const result = await db.query(
       `SELECT 
          p.*, 
+        t.profile_image AS tasker_image,
          t.mobile AS tasker_mobile, 
          t.service AS tasker_service
        FROM posts p
@@ -99,17 +101,39 @@ app.get("/user", async function (req, res) {
   }
 });
 
-
-
 app.get("/tasker", async function (req, res) {
-  const result = await db.query("SELECT * FROM posts");
-  const posts = result.rows;
-  if (posts && posts.length > 0) {
-    res.json({ posts });
-  } else {
-    res.json({ posts: [], message: "No posts found" });
+  try {
+    const result = await db.query(`
+      SELECT 
+        p.*, 
+        t.profile_image AS tasker_image
+      FROM posts p
+      JOIN taskers t ON p.tasker_id = t.id
+    `);
+
+    const posts = result.rows;
+
+    if (posts && posts.length > 0) {
+      res.json({ posts });
+    } else {
+      res.json({ posts: [], message: "No posts found" });
+    }
+  } catch (error) {
+    console.error("Error fetching taskers with posts:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
+
+
+// app.get("/tasker", async function (req, res) {
+//   const result = await db.query("SELECT * FROM posts");
+//   const posts = result.rows;
+//   if (posts && posts.length > 0) {
+//     res.json({ posts });
+//   } else {
+//     res.json({ posts: [], message: "No posts found" });
+//   }
+// });
 
 app.post("/tasker/:taskerId/transfer",async function (req, res) {
   const amount = parseFloat(req.body.amount);
@@ -239,7 +263,6 @@ app.post("/book-service", async function (req, res) {
   const userAddress = req.user.address;
   const taskerId = req.body.taskerId;
   const userCity = req.user.city;
-  //const postId = req.body.postId;
   const date = req.body.date;
   const time  = req.body.time;
   const paymentMethod = req.body.paymentMethod;
@@ -272,14 +295,13 @@ app.post("/book-service", async function (req, res) {
   }else{
     res.json({ ok: false, message: "Invalid payment method" });
   }
-          // Add money to tasker
+
           const taskerData = await db.query("SELECT money FROM taskers WHERE id = $1", [taskerId]);
           const taskerAmount = taskerData.rows[0];
           const taskerTotalAmount = parseFloat(taskerAmount.money) + parseFloat(amount) || taskerAmount.money;
           const taskerResult = await db.query("UPDATE taskers SET money = $1 WHERE id = $2",
             [taskerTotalAmount, taskerId]);
 
-            // Subtract money from user
             const userData = await db.query("SELECT money FROM users WHERE id = $1", [userId]);
             const userAmount = userData.rows[0];
             const userTotalAmount = parseFloat(userAmount.money) - parseFloat(amount) || userAmount.money;
@@ -500,6 +522,7 @@ app.post("/tasker-submit", async function (req, res) {
   const submittedEmail = req.body.email;
   const submittedCity = req.body.city;
   const submittedService = req.body.service;
+  const submittedCompanyName = req.body.company_name;
   console.log(req.body);
   try {
     const result = await db.query("SELECT * FROM taskers WHERE email = $1",
@@ -511,11 +534,12 @@ app.post("/tasker-submit", async function (req, res) {
     const mobileToUpdate = submittedMobileNum || currentData.mobile;
     const emailToUpdate = submittedEmail || currentData.email;
     const cityToUpdate = submittedCity || currentData.city;
-    const serviceToUpdate = submittedService || currentData.service;
+    const serviceToUpdate = submittedService || currentData.service;  
+    const companyNameToUpdate = submittedCompanyName || currentData.company_name;
     console.log("This is the service to be updated: " + serviceToUpdate);
 
-    const updatingResult = await db.query("UPDATE taskers SET name = $1, mobile = $2, email = $3, city = $4, service=$5 WHERE email = $6",
-      [nameToUpdate, mobileToUpdate, emailToUpdate, cityToUpdate, serviceToUpdate, req.user.email]
+    const updatingResult = await db.query("UPDATE taskers SET name = $1, mobile = $2, email = $3, city = $4, service=$5, company_name=$6 WHERE email = $7",
+      [nameToUpdate, mobileToUpdate, emailToUpdate, cityToUpdate, serviceToUpdate, companyNameToUpdate, req.user.email]
     );
     req.user.email = emailToUpdate;
   } catch (err) {
@@ -647,6 +671,7 @@ app.post("/tasker-signup", upload.single('profile_image'), async function (req, 
     const service = req.body.service;
     const gender = req.body.gender;
     const city = req.body.city;
+    const company_name = req.body.company_name;
 
     const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
 
@@ -658,8 +683,8 @@ app.post("/tasker-signup", upload.single('profile_image'), async function (req, 
     const hash = await bcrypt.hash(password, saltRounds);
     
     const result = await db.query(
-      "INSERT INTO taskers (email, password, name, mobile, profile_image, money, service, gender, city) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
-      [email, hash, name, mobile, imagePath, 0, service, gender, city]
+      "INSERT INTO taskers (email, password, name, mobile, profile_image, money, service, gender, city, company_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *",
+      [email, hash, name, mobile, imagePath, 0, service, gender, city, company_name]
     );
     
 
@@ -1046,8 +1071,58 @@ app.get("/verify/:taskerId", async (req, res) => {
   const tasker = result.rows[0];
   res.json({ tasker });
 });
+app.get("/admin/bookings", async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        b.id, 
+        u.name AS user_name, 
+        t.name AS tasker_name, 
+        b.booking_status, 
+        b.date
+      FROM bookings b
+      JOIN users u ON b.user_id = u.id
+      JOIN taskers t ON b.tasker_id = t.id
+    `);
+
+    const bookings = result.rows;
+    res.json({ bookings });
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+app.get("/admin/payments", async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        p.id, 
+        t.name AS tasker_name, 
+        p.amount, 
+        p.created_at
+      FROM payments p
+      JOIN taskers t ON p.receiver_id = t.id
+    `);
+
+    const payments = result.rows;
+    res.json({ payments });
+  } catch (error) {
+    console.error("Error fetching payments:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 
+// app.get("/admin/bookings", async (req, res) => {
+//   const result = await db.query("SELECT * FROM bookings");
+//   const bookings = result.rows;
+//   res.json({ bookings });
+// }); 
+// app.get("/admin/payments", async (req, res) => {
+//   const result = await db.query("SELECT * FROM payments");
+//   const payments = result.rows;
+//   res.json({ payments });
+// }); 
 
 // Example using Express and pg (PostgreSQL)
 // app.get('/chat-list/:taskerId', async (req, res) => {

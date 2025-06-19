@@ -6,34 +6,41 @@ const EditPost = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { id } = useParams();
-    const { postId, initialContent } = location.state || {}; 
+    const { postId, initialContent, initialTitle, initialPrice } = location.state || {}; 
 
     const [postContent, setPostContent] = useState(initialContent || '');
+    const [title, setTitle] = useState(initialTitle || '');
+    const [price, setPrice] = useState(initialPrice || '');
     const [error, setError] = useState('');
-    const [title, setTitle] = useState('');
-    const [price, setPrice] = useState('');
+
     useEffect(() => {
-        if (!initialContent) {
+        if (!initialContent || !initialTitle || !initialPrice) {
             axios.get(`http://localhost:3000/post/${id}/edit`, {
                 withCredentials: true
             })
             .then(response => {
-                if (response.data.post) {
-                    setTitle(response.data.post.title);
-                    setPostContent(response.data.post.content);
-                    setPrice(response.data.post.price);
-                }
+                setTitle(response.data.post.title);
+                setPostContent(response.data.post.content);
+                setPrice(response.data.post.price);
             })
             .catch(err => {
                 console.error('Error fetching post:', err);
                 setError('Failed to load post content');
             });
         }
-    }, [id, initialContent]);
+    }, [id, initialContent, initialTitle, initialPrice]);
 
     const handleEditPost = () => {
         if (!postContent.trim()) {
             setError('Post content cannot be empty.');
+            return;
+        }
+        if (!title.trim()) {
+            setError('Title cannot be empty.');
+            return;
+        }
+        if (!price.trim()) {
+            setError('Price cannot be empty.');
             return;
         }
 
@@ -53,10 +60,6 @@ const EditPost = () => {
             setError('Something went wrong. Please try again.');
         });
     };
-
-    // const goToTaskerDashboard = () => {
-    //     navigate('/tasker-dashboard');
-    // }
 
     const containerStyle = {
         minHeight: '100vh',

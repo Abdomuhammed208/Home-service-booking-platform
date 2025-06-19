@@ -1,13 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import QRCode from "react-qr-code";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import NotFound from "../../components/Notfound";
 
 function TaskerProfile() {
     const navigate = useNavigate();
     const [tasker, setTasker] = useState(null);
-    const [taskerId, setTaskerId] = useState(null);
+    const [taskerId, setTaskerId] = useState();
     const [feedback, setFeedback] = useState(null);
     console.log(taskerId);
     
@@ -34,23 +34,25 @@ function TaskerProfile() {
             .catch((err) => {
                 console.error("Failed to fetch tasker profile:", err);
             });
+    }, []);
 
-            const fetchFeedback = async () => {
-                const feedbackResponse = await fetch(`http://localhost:3000/tasker/${taskerId}/feedback`, {
-                    method: "GET",
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }, 
-                    credentials: "include"
-                });
-        
-                if (feedbackResponse.ok) {
-                    const feedbackData = await feedbackResponse.json();
-                    setFeedback(feedbackData.feedback || []);
-                }
-            };
-
-            fetchFeedback();
+    useEffect(() => {
+        if (!taskerId) return;
+        const fetchFeedback = async () => {
+            const feedbackResponse = await fetch(`http://localhost:3000/tasker/${taskerId}/feedback`, {
+                method: "GET",
+                headers: {
+                    'Content-Type': 'application/json'
+                }, 
+                credentials: "include"
+            });
+    
+            if (feedbackResponse.ok) {
+                const feedbackData = await feedbackResponse.json();
+                setFeedback(feedbackData.feedback || []);
+            }
+        };
+        fetchFeedback();
     }, [taskerId]);
 
     const handleImageChange = async (e) => {
@@ -114,7 +116,10 @@ function TaskerProfile() {
 
     const containerStyle = {
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #fef7ed 0%, #fdf2f8 100%)',
+        backgroundColor: '#d1fae5',
+        backgroundImage: 'radial-gradient(#6b7280 1.3px, #d1fae5 1.3px)',
+        backgroundSize: '26px 26px',
+        opacity: 0.8,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -335,7 +340,28 @@ function TaskerProfile() {
                         Back to Dashboard
                     </a>
                     <div style={headerTitleStyle}>Profile Details</div>
-                    <a href="/edit-profile-tasker" style={headerLinkStyle}>Edit Profile</a>
+                    <a
+                        href="/edit-profile-tasker"
+                        style={headerLinkStyle}
+                        onClick={e => {
+                            e.preventDefault();
+                            if (tasker) {
+                                navigate("/edit-profile-tasker", {
+                                    state: {
+                                        name: tasker.name,
+                                        mobile: tasker.mobile,
+                                        email: tasker.email,
+                                        city: tasker.city,
+                                        service: tasker.service
+                                    }
+                                });
+                            } else {
+                                navigate("/edit-profile-tasker");
+                            }
+                        }}
+                    >
+                        Edit Profile
+                    </a>
                 </div>
 
                 <div style={mainContentStyle}>
@@ -390,6 +416,10 @@ function TaskerProfile() {
                             <div style={infoItemStyle}>
                                 <span style={infoLabelStyle}>Service</span>
                                 <span style={infoValueStyle}>{tasker.service}</span>
+                            </div>
+                            <div style={infoItemStyle}>
+                                <span style={infoLabelStyle}>Company Name</span>
+                                <span style={infoValueStyle}>{tasker.company_name || "N/A"}</span>
                             </div>
                             <div style={infoItemStyle}>
                                 <span style={infoLabelStyle}>Balance</span>

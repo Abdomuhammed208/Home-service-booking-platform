@@ -29,7 +29,10 @@ const TNotification = () => {
 
   const containerStyle = {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #fef7ed 0%, #fdf2f8 100%)',
+    backgroundColor: '#d1fae5',
+    backgroundImage: 'radial-gradient(#6b7280 1.3px, #d1fae5 1.3px)',
+    backgroundSize: '26px 26px',
+    opacity: 0.8,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

@@ -83,7 +83,10 @@ const Dashboard = () => {
 
   const containerStyle = {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #fef7ed 0%, #fdf2f8 100%)',
+    backgroundColor: '#d1fae5',
+    backgroundImage: 'radial-gradient(#6b7280 1.3px, #d1fae5 1.3px)',
+    backgroundSize: '26px 26px',
+    opacity: 0.8,
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
   };
 
@@ -165,7 +168,7 @@ const Dashboard = () => {
   const postsCardStyle = {
     backgroundColor: '#ffffff',
     borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0 12px 40px rgba(6, 8, 16, 0.22), 0 2px 12px rgba(234, 88, 12, 0.12)',
     border: '1px solid #fed7aa',
     height: '100%',
     display: 'flex',
@@ -250,7 +253,7 @@ const Dashboard = () => {
   const conversationsCardStyle = {
     backgroundColor: '#ffffff',
     borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0 12px 40px rgba(8, 12, 27, 0.22), 0 2px 12px rgba(234, 88, 12, 0.12)',
     border: '1px solid #fed7aa',
     height: '100%',
     display: 'flex',
@@ -335,9 +338,9 @@ const Dashboard = () => {
             {/* Logo Area */}
           <div style={logoContainerStyle}>
             <div style={logoStyle}>
-              <span>D</span>
+              <span>S</span>
                 </div>
-            <div style={logoTextStyle}>Dashboard</div>
+            <div style={logoTextStyle}>ServEase</div>
             </div>
 
             {/* Navigation Icons */}
@@ -503,9 +506,9 @@ const Dashboard = () => {
                       onClick={() => navigate(`/chat/${conversation.id}`)}
                     >
                       <div style={conversationHeaderStyle}>
-                        {conversation.tasker_image ? (
+                        {conversation.profile_image ? (
                           <img 
-                            src={`http://localhost:3000${conversation.tasker_image}`} 
+                            src={`http://localhost:3000${conversation.profile_image}`} 
                             alt={conversation.name} 
                             style={avatarStyle} 
                           />

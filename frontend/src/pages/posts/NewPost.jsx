@@ -21,24 +21,21 @@ const NewPost = () => {
                 { post: post.trim(), title: title.trim(), price: price.trim() },
                 { withCredentials: true }
             );
+            navigate('/tasker-dashboard', { 
+                state: { postMessage: "Post created successfully!" }
+            });
 
             if (!response.data) {
                 setError('Failed to create post. Please try again.');
             }else{
                 setPost('');
-                navigate('/tasker-dashboard', { 
-                    state: { postMessage: "Post created successfully!" }
-                });
+               
             }
         } catch (error) {
             console.error('Error submitting post:', error);
             setError('Failed to create post. Please try again.');
         }
     };
-
-    // const goToTaskerDashboard = () => {
-    //     navigate('/tasker-dashboard');
-    // }
 
     const containerStyle = {
         minHeight: '100vh',
@@ -164,7 +161,7 @@ const NewPost = () => {
                         />
                     </div>
                     <div style={buttonRowStyle}>
-                        <button type="submit" style={submitButtonStyle}>
+                        <button onClick={()=>navigate('/tasker-dashboard')} type="submit" style={submitButtonStyle}>
                             Share Post
                         </button>
                         <button 

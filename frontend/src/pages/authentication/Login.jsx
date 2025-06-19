@@ -4,7 +4,7 @@ import { useState } from "react";
 
 const Login = () => {
   const location = useLocation();
-  const succefulMessage = location.state?.succefulMessage;
+  const successfulMessage = location.state?.successfulMessage;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -42,136 +42,144 @@ const Login = () => {
     }
   };
 
-  const styles = {
-    container: {
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: "100vh",
-      backgroundColor: "#f9fafb",
-      fontFamily: "sans-serif"
-    },
-    formBox: {
-      backgroundColor: "#fff",
-      padding: "40px",
-      borderRadius: "8px",
-      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-      width: "100%",
-      maxWidth: "400px"
-    },
-    title: {
-      fontSize: "2rem",
-      fontWeight: "bold",
-      marginBottom: "1.5rem",
-      textAlign: "center"
-    },
-    inputWrapper: {
-      position: "relative",
-      marginBottom: "1rem"
-    },
-    input: {
-      width: "100%",
-      padding: "12px 16px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
-      fontSize: "1rem"
-    },
-    button: {
-      width: "100%",
-      padding: "12px",
-      backgroundColor: "#4f46e5",
-      color: "white",
-      border: "none",
-      borderRadius: "5px",
-      fontSize: "1rem",
-      cursor: "pointer",
-      marginTop: "1rem"
-    },
-    text: {
-      marginTop: "1rem",
-      fontSize: "0.9rem",
-      textAlign: "center"
-    },
-    link: {
-      color: "#4f46e5",
-      textDecoration: "none",
-      marginLeft: "5px"
-    },
-    error: {
-      color: "red",
-      textAlign: "center",
-      marginBottom: "1rem"
-    },
-    success: {
-      color: "green",
-      textAlign: "center",
-      marginBottom: "1rem"
-    }
-  };
-
-  const backgroundStyle = {
+  const pageStyle = {
     minHeight: "100vh",
-    width: "100vw",
-    position: "fixed",
-    top: 0,
-    left: 0,
-    zIndex: 0,
-    backgroundColor: "#e5e5f7",
-    backgroundImage: "repeating-linear-gradient(45deg, #3fde89, #3fde89 11.5px, #e5e5f7 11.5px, #e5e5f7 57.5px)",
-    backgroundAttachment: "fixed",
-    backgroundRepeat: "repeat"
-  };
-
-  const contentWrapperStyle = {
-    position: "relative",
-    zIndex: 1,
-    minHeight: "100vh",
+    backgroundColor: "#d1fae5",
+    backgroundImage: "radial-gradient(#6b7280 1.3px, #d1fae5 1.3px)",
+    backgroundSize: "26px 26px",
+    opacity: 0.8,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     display: "flex",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    padding: "2rem"
+  };
+
+  const cardStyle = {
+    background: "#fff",
+    borderRadius: "18px",
+    boxShadow: "0 12px 40px rgba(80, 112, 255, 0.22), 0 2px 12px rgba(234, 88, 12, 0.12)",
+    padding: "3rem 2rem",
+    width: "100%",
+    maxWidth: "420px",
+    textAlign: "center"
+  };
+
+  const titleStyle = {
+    fontSize: "2.5rem",
+    fontWeight: 800,
+    color: "#ea580c",
+    marginBottom: "2rem"
+  };
+
+  const inputWrapperStyle = {
+    marginBottom: "1.5rem",
+    textAlign: "left"
+  };
+
+  const labelStyle = {
+    display: "block",
+    marginBottom: "0.5rem",
+    color: "#4b5563",
+    fontWeight: 500
+  };
+
+  const inputStyle = {
+    width: "100%",
+    padding: "8px 12px",
+    borderRadius: "8px",
+    border: "1px solid #fed7aa",
+    fontSize: "0.97rem",
+    transition: "border-color 0.2s",
+    outline: "none",
+    height: "36px",
+    boxSizing: "border-box"
+  };
+
+  const buttonStyle = {
+    width: "100%",
+    padding: "0.75rem 1.5rem",
+    background: "#ea580c",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    fontSize: "1rem",
+    fontWeight: 600,
+    cursor: "pointer",
+    transition: "background-color 0.2s",
+    marginTop: "1rem"
+  };
+
+  const textStyle = {
+    marginTop: "1.5rem",
+    color: "#6b7280",
+    fontSize: "0.95rem"
+  };
+
+  const linkStyle = {
+    color: "#ea580c",
+    textDecoration: "none",
+    fontWeight: 600,
+    marginLeft: "0.5rem"
+  };
+
+  const errorStyle = {
+    color: "#dc2626",
+    backgroundColor: "#fee2e2",
+    padding: "0.75rem",
+    borderRadius: "8px",
+    marginBottom: "1.5rem",
+    fontSize: "0.95rem"
+  };
+
+  const successStyle = {
+    color: "#059669",
+    backgroundColor: "#d1fae5",
+    padding: "0.75rem",
+    borderRadius: "8px",
+    marginBottom: "1.5rem",
+    fontSize: "0.95rem"
   };
 
   return (
-    <>
-      <div style={backgroundStyle}></div>
-      <div style={contentWrapperStyle}>
-        <form style={styles.formBox} onSubmit={handleLogin}>
-          <h1 style={styles.title}>Login</h1>
-
-          <div style={styles.inputWrapper}>
+    <div style={pageStyle}>
+      <div style={cardStyle}>
+        <h1 style={titleStyle}>Login</h1>
+        {successfulMessage && <p style={successStyle}>{successfulMessage}</p>}
+        {error && <p style={errorStyle}>{error}</p>}
+        <form onSubmit={handleLogin}>
+          <div style={inputWrapperStyle}>
+            <label style={labelStyle}>Email</label>
             <input
-              style={styles.input}
-              placeholder="Email"
+              style={inputStyle}
               type="email"
+              placeholder="Enter your email"
+              value={email}
               onChange={(e) => setEmail(e.target.value)}
-              name="email"
               required
             />
           </div>
-
-          <div style={styles.inputWrapper}>
+          <div style={inputWrapperStyle}>
+            <label style={labelStyle}>Password</label>
             <input
-              style={styles.input}
-              placeholder="Password"
+              style={inputStyle}
               type="password"
+              placeholder="Enter your password"
+              value={password}
               onChange={(e) => setPassword(e.target.value)}
-              name="password"
               required
             />
           </div>
-
-          {error && <p style={styles.error}>{error}</p>}
-
-          <button style={styles.button} type="submit">Login</button>
-
-          <p style={styles.text}>
-            Don't have an account?
-            <a href="/signup" style={styles.link}>Here</a>
-          </p>
+          <button style={buttonStyle} type="submit">
+            Sign In
+          </button>
         </form>
+        <p style={textStyle}>
+          Don't have an account?
+          <a href="/signup" style={linkStyle}>Create Account</a>
+        </p>
       </div>
-    </>
+    </div>
   );
 };
 
