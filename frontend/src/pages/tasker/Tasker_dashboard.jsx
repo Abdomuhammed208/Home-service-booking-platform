@@ -382,7 +382,7 @@ function Taskerdashboard() {
                         <div style={logoStyle}>
                             <span>S</span>
                         </div>
-                        <div style={logoTextStyle}>ServEsae</div>
+                        <div style={logoTextStyle}>ServEase</div>
                     </div>
                     {/* Navigation Icons */}
                     <div style={navIconsStyle}>

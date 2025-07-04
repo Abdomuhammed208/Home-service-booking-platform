@@ -256,7 +256,7 @@ function UserAccount() {
                         )}
                         <div style={{display: 'flex', flexDirection: 'row', gap: '3rem', width: '100%', marginTop: '1rem'}}>
                             <button style={chatButtonStyle} onClick={() => navigate(`/chat/${taskerId}`)}>Chat</button>
-                            <button style={chatButtonStyle} onClick={() => navigate(`/tasker/${taskerId}/transfer`)}>Transfer</button>
+                           
                         </div>
                     </div>
                     <div style={rightSectionStyle}>

@@ -1,7 +1,5 @@
 import React from 'react';
 import {BrowserRouter, Routes, Route } from "react-router-dom"
-import Login from './pages/authentication/Login.jsx';
-import Signup from './pages/authentication/Signup.jsx';
 import Topup from './pages/customer/Topup.jsx';
 import Main from './pages/Main.jsx';
 import Profile from './pages/customer/Profile.jsx';
@@ -28,6 +26,7 @@ import ChatList from './pages/tasker/ChatList.jsx';
 import Conversation from './pages/tasker/Conversation.jsx';
 import TNotification from './pages/tasker/TNotification.jsx';
 import VerificationPage from './pages/users/VerificationPage.jsx';
+import AuthPage from './pages/authentication/AuthPage.jsx';
 function App() {
 
   return (
@@ -35,8 +34,7 @@ function App() {
      <BrowserRouter>
      <Routes>
      <Route path='/' element={<Main />}/>
-     <Route path='/login' element={<Login />}/>
-     <Route path='/signup' element={<Signup />}/>
+     <Route path='/auth' element={<AuthPage />}/>
      <Route path='/top-up' element={<Topup/>}/>
      <Route path='/top-up-tasker' element={<TopupTasker/>}/>
      <Route path='/dashboard' element={<Dashboard/>}/>

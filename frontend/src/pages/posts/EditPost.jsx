@@ -188,6 +188,7 @@ const EditPost = () => {
                         <button 
                             type="submit"
                             style={submitButtonStyle}
+                            onClick={() => navigate('/tasker-dashboard')}
                         >
                             Save Changes
                         </button>

@@ -1,69 +1,10 @@
-// import React, {useState, useEffect} from "react";
-// import Heading from "../components/Heading";
-// import Footer from "../components/Footer";
-// import './main.css';
-
-// function Main() {
-//   const [message, setMessage] = useState(null);
-
-//   useEffect(() => {
-//     fetch("http://localhost:3000/")
-//       .then((res) => res.json())
-//       .then((data) => setMessage(data.message))
-//       .catch((err) => console.error(err));
-//   }, []);
-
-//   return (
-//     <div>
-//         <Heading/>
-//         <p style={{color: 'black'}}>{message}</p>
-//         <Footer/>
-//   </div>
-//   );
-// }
-
-// export default Main;
-
-// import logo from './logo.svg';
-// import './App.css';
-
-// function App() {
-//   return (
-//     <div className="App">
-//       <header className="App-header">
-//         <img src={logo} className="App-logo" alt="logo" />
-//         <p>
-//           Edit <code>src/App.js</code> and save to reload.
-//         </p>
-//         <a
-//           className="App-link"
-//           href="https://reactjs.org"
-//           target="_blank"
-//           rel="noopener noreferrer"
-//         >
-//           Learn React
-//         </a>
-//       </header>
-//     </div>
-//   );
-// }
-
-//export default App;
-// HomeServ.jsx
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './main.css';
 
 const Main = () => {
   const navigate = useNavigate();
-  const [message, setMessage] = useState(null);
 
-  useEffect(() => {
-    fetch("http://localhost:3000/")
-      .then((res) => res.json())
-      .then((data) => setMessage(data.message))
-      .catch((err) => console.error(err));
-  }, []);
 
   // --- Styles ---
   const pageStyle = {
@@ -233,11 +174,9 @@ const Main = () => {
           <a href="/" style={navLink} onClick={e => handleSmoothScroll(e, "home")}>Home</a>
           <a href="#services" style={navLink} onClick={e => handleSmoothScroll(e, "services")}>Services</a>
           <a href="#howitworks" style={navLink} onClick={e => handleSmoothScroll(e, "howitworks")}>How it Works</a>
-          <a href="#about" style={navLink} onClick={e => handleSmoothScroll(e, "about")}>About</a>
         </div>
         <div style={navButtons}>
-          <button style={loginBtn} onClick={() => navigate('/login')}>Login</button>
-          <button style={signupBtn} onClick={() => navigate('/signup')}>Sign Up</button>
+          <button style={loginBtn} onClick={() => navigate('/auth')}>Let's Get Started</button>
         </div>
       </nav>
 
@@ -246,7 +185,7 @@ const Main = () => {
         <div style={heroSubtitle}>
           Book trusted professionals for cleaning, plumbing, electrical work and more. Quick, reliable service guaranteed.
         </div>
-        <div style={{ color: '#ea580c', fontWeight: 600 }}>{message}</div>
+        {/* <div style={{ color: '#ea580c', fontWeight: 600 }}>{message}</div> */}
       </div>
 
       <div style={servicesSection} id="services">
@@ -303,11 +242,11 @@ const Main = () => {
       <div style={ctaSection}>
         <h2 style={{ fontSize: '2rem', fontWeight: '800' }}>Ready to book your service?</h2>
         <p style={{ marginTop: '1rem', fontSize: '1.25rem' }}>Join thousands of satisfied customers.</p>
-        <button style={ctaBtn} onClick={() => navigate('/login')}>Book Now</button>
+        <button style={ctaBtn} onClick={() => navigate('/auth')}>Book Now</button>
       </div>
 
       <footer style={footer}>
-        <p>© 2025 HomeHelper. All rights reserved.</p>
+        <p>© 2025 ServEase. All rights reserved.</p>
       </footer>
     </div>
   );

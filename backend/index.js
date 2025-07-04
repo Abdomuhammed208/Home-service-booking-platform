@@ -9,12 +9,22 @@ import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
 import { log } from "console";
+import http from 'http';
+import { Server } from 'socket.io';
 
 const app = express();
 const port = 3000;
 const saltRounds = 10;
 
-
+// Create HTTP server and Socket.IO instance
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3001",
+    methods: ["GET", "POST"]
+  }
+});
+app.set('io', io);
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -275,7 +285,7 @@ app.post("/book-service", async function (req, res) {
 
 
   if(paymentMethod === "cash"){
-    const paymentstatus = "Unpaied";
+    const paymentstatus = "Unpaid";
     await db.query("INSERT INTO bookings (user_id, tasker_id, date, time, payment_status, amount, method, booking_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
       [userId, taskerId, date, time, paymentstatus, amount, paymentMethod, "In progress"]);
   } else if(paymentMethod === "card"){
@@ -328,12 +338,17 @@ app.post("/complete-order", async function (req, res) {
   const orderId = req.body.id;
   const taskerId = req.user.id;
 
-await db.query("UPDATE bookings SET booking_status = 'Completed' WHERE id = $1", [orderId]);
-const result = await db.query("SELECT * FROM bookings WHERE id = $1", [orderId]);
-const booking = result.rows[0];
+  await db.query("UPDATE bookings SET booking_status = 'Completed' WHERE id = $1", [orderId]);
+  const result = await db.query("SELECT * FROM bookings WHERE id = $1", [orderId]);
+  const booking = result.rows[0];
+
+  // Emit real-time update
+  const io = req.app.get('io');
+  io.emit('bookingUpdated', booking);
+
   await db.query("INSERT INTO notifications (receiver_id, role, message, related_user_id) VALUES ($1, 'user', $2, $3)", [
     booking.user_id,
-    `Your service has been completed successfully by ${req.user.name}`, 
+    `Your service has been completed successfully by ${req.user.name}`,
     taskerId
   ]);
 
@@ -344,14 +359,18 @@ const booking = result.rows[0];
 app.post("/cancel-order", async function (req, res) {
   const orderId = req.body.id;
   const userId = req.user.id;
-await db.query("UPDATE bookings SET booking_status = 'Cancelled' WHERE id = $1", [orderId]);
+  await db.query("UPDATE bookings SET booking_status = 'Cancelled' WHERE id = $1", [orderId]);
   const result = await db.query("SELECT * FROM bookings WHERE id = $1", [orderId]);
   const booking = result.rows[0];
   const taskerId = booking.tasker_id;
 
+  // Emit real-time update
+  const io = req.app.get('io');
+  io.emit('bookingUpdated', booking);
+
   await db.query("INSERT INTO notifications (receiver_id, role, message,related_user_id) VALUES ($1, 'tasker', $2, $3)", [
     taskerId,
-    `${req.user.name} cancelled your service on ${booking.date} at ${booking.time}`, 
+    `${req.user.name} cancelled your service on ${booking.date} at ${booking.time}`,
     userId
   ]);
 
@@ -439,8 +458,61 @@ app.post("/post/:id/delete", async function (req, res) {
 app.post("/delete-account", async function (req, res) {
   try {
     if (req.isAuthenticated()) {
-      await db.query("DELETE FROM users WHERE email = $1", [req.user.email]);
-      await db.query("DELETE FROM taskers WHERE email = $1", [req.user.email]);
+      // Start a transaction to ensure data consistency
+      await db.query('BEGIN');
+      
+      const userId = req.user.id;
+      const userEmail = req.user.email;
+      
+      // Delete related records in the correct order to avoid foreign key violations
+      
+      // 1. Delete notifications where this user is the receiver
+      await db.query("DELETE FROM notifications WHERE receiver_id = $1 AND role = 'user'", [userId]);
+      
+      // 2. Delete feedback where this user is the reviewer
+      await db.query("DELETE FROM feedback WHERE user_id = $1", [userId]);
+      
+      // 3. Delete payments where this user is the sender
+      await db.query("DELETE FROM payments WHERE sender_id = $1", [userId]);
+      
+      // 4. Delete messages involving this user
+      await db.query("DELETE FROM messages WHERE customer_id = $1", [userId]);
+      
+      // 5. Delete bookings where this user is the customer
+      await db.query("DELETE FROM bookings WHERE user_id = $1", [userId]);
+      
+      // 6. Delete the user
+      await db.query("DELETE FROM users WHERE email = $1", [userEmail]);
+      
+      // 7. If this user is also a tasker, delete tasker-related records
+      const taskerResult = await db.query("SELECT id FROM taskers WHERE email = $1", [userEmail]);
+      if (taskerResult.rows.length > 0) {
+        const taskerId = taskerResult.rows[0].id;
+        
+        // Delete notifications where this tasker is the receiver
+        await db.query("DELETE FROM notifications WHERE receiver_id = $1 AND role = 'tasker'", [taskerId]);
+        
+        // Delete feedback for this tasker
+        await db.query("DELETE FROM feedback WHERE tasker_id = $1", [taskerId]);
+        
+        // Delete payments where this tasker is the receiver
+        await db.query("DELETE FROM payments WHERE receiver_id = $1", [taskerId]);
+        
+        // Delete messages involving this tasker
+        await db.query("DELETE FROM messages WHERE tasker_id = $1", [taskerId]);
+        
+        // Delete posts by this tasker
+        await db.query("DELETE FROM posts WHERE tasker_id = $1", [taskerId]);
+        
+        // Delete bookings for this tasker
+        await db.query("DELETE FROM bookings WHERE tasker_id = $1", [taskerId]);
+        
+        // Delete the tasker
+        await db.query("DELETE FROM taskers WHERE email = $1", [userEmail]);
+      }
+      
+      // Commit the transaction
+      await db.query('COMMIT');
 
       req.logout(() => {
         req.session.destroy((err) => {
@@ -455,6 +527,8 @@ app.post("/delete-account", async function (req, res) {
       res.status(401).json({ success: false, message: "Unauthorized" });
     }
   } catch (err) {
+    // Rollback the transaction if any error occurs
+    await db.query('ROLLBACK');
     console.error(err);
     res.status(500).json({ success: false, message: "Server error" });
   }
@@ -581,8 +655,44 @@ app.get("/admin", async function (req, res) {
 
 app.delete("/admin/:id", async function (req, res) {
   const id = req.params.id;
-  await db.query("DELETE FROM taskers WHERE id = $1", [id]);
-  res.json({ success: true, message: "Tasker deleted successfully" });
+  
+  try {
+    // Start a transaction to ensure data consistency
+    await db.query('BEGIN');
+    
+    // Delete related records in the correct order to avoid foreign key violations
+    
+    // 1. Delete notifications related to this tasker
+    await db.query("DELETE FROM notifications WHERE receiver_id = $1 AND role = 'tasker'", [id]);
+    
+    // 2. Delete feedback for this tasker
+    await db.query("DELETE FROM feedback WHERE tasker_id = $1", [id]);
+    
+    // 3. Delete payments where this tasker is the receiver
+    await db.query("DELETE FROM payments WHERE receiver_id = $1", [id]);
+    
+    // 4. Delete messages involving this tasker
+    await db.query("DELETE FROM messages WHERE tasker_id = $1", [id]);
+    
+    // 5. Delete posts by this tasker
+    await db.query("DELETE FROM posts WHERE tasker_id = $1", [id]);
+    
+    // 6. Delete bookings for this tasker
+    await db.query("DELETE FROM bookings WHERE tasker_id = $1", [id]);
+    
+    // 7. Finally delete the tasker
+    await db.query("DELETE FROM taskers WHERE id = $1", [id]);
+    
+    // Commit the transaction
+    await db.query('COMMIT');
+    
+    res.json({ success: true, message: "Tasker deleted successfully" });
+  } catch (error) {
+    // Rollback the transaction if any error occurs
+    await db.query('ROLLBACK');
+    console.error("Error deleting tasker:", error);
+    res.status(500).json({ success: false, message: "Failed to delete tasker. Please try again." });
+  }
 });
 
 app.post("/login", (req, res, next) => {
@@ -1170,6 +1280,6 @@ app.get("/admin/payments", async (req, res) => {
 
 
 
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });

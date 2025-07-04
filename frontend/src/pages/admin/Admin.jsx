@@ -22,13 +22,20 @@ function Admin() {
 
     const handleDelete = async (id) => {
         try {
-            const confirm = window.confirm("Are you sure you want to delete this tasker?");
+            const confirm = window.confirm("Are you sure you want to delete this tasker? This action cannot be undone and will remove all associated data.");
             if (confirm) {
-                await axios.delete(`http://localhost:3000/admin/${id}`, { withCredentials: true });
-                setTaskers(taskers.filter(tasker => tasker.id !== id));
+                const response = await axios.delete(`http://localhost:3000/admin/${id}`, { withCredentials: true });
+                if (response.data.success) {
+                    setTaskers(taskers.filter(tasker => tasker.id !== id));
+                    alert("Tasker deleted successfully!");
+                } else {
+                    alert("Failed to delete tasker. Please try again.");
+                }
             }
         } catch (error) {
             console.error("Error deleting tasker:", error);
+            const errorMessage = error.response?.data?.message || "Failed to delete tasker. Please try again.";
+            alert(errorMessage);
         }
     };
     const handleLogout = async () => {

@@ -61,7 +61,7 @@ function Profile() {
       await axios.post("http://localhost:3000/logout", {}, {
         withCredentials: true,
       });
-      navigate("/login");
+      navigate("/auth");
     } catch (err) {
       console.log("Logout failed:", err);
     }
@@ -77,7 +77,7 @@ function Profile() {
       });
       if (response.data.success) {
         alert("The account has been deleted successfully");
-        navigate("/login");
+        navigate("/auth");
       } else {
         alert(response.data.message || "Failed to delete account.");
       }
