@@ -100,7 +100,7 @@ const AuthPage = () => {
       }
 
       const endpoint = userType === 'customer' ? '/signup' : '/tasker-signup';
-      const response = await fetch(`https://home-service-booking-platform-jri3.onrender.com${endpoint}`, {
+      const response = await fetch(`https://home-service-booking-platform-jri3.onrender.com/${endpoint}`, {
         method: "POST",
         body: formDataToSend,
       });
