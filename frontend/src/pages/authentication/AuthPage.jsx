@@ -46,7 +46,7 @@ const AuthPage = () => {
     
     try {
       const response = await axios.post(
-        "http://localhost:3000/login",
+        "https://home-service-booking-platform-jri3.onrender.com/login",
         { email: loginEmail, password: loginPassword },
         { withCredentials: true }
       );
