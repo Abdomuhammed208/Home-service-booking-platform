@@ -9,22 +9,10 @@ import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
 import { log } from "console";
-import http from 'http';
-import { Server } from 'socket.io';
 
 const app = express();
 const port = 3000;
 const saltRounds = 10;
-
-// Create HTTP server and Socket.IO instance
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:3001",
-    methods: ["GET", "POST"]
-  }
-});
-app.set('io', io);
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -81,7 +69,15 @@ const db = new pg.Client({
   password: "abdo2085",
   port: 5432,
 });
-db.connect();
+
+// db.connect().catch(err => {
+//   console.error("❌ Failed to connect to PostgreSQL database:", err.message);
+//   console.error("⚠️  Please make sure PostgreSQL is running on localhost:5432");
+//   console.error("💡 To start PostgreSQL, try one of these:");
+//   console.error("   - brew services start postgresql");
+//   console.error("   - Or start PostgreSQL.app");
+//   console.error("   - Or check your PostgreSQL installation");
+// });
 
 app.get("/", (req, res) => {
   res.json({message: "Frontend is connected to backend!!!"});
@@ -342,10 +338,6 @@ app.post("/complete-order", async function (req, res) {
   const result = await db.query("SELECT * FROM bookings WHERE id = $1", [orderId]);
   const booking = result.rows[0];
 
-  // Emit real-time update
-  const io = req.app.get('io');
-  io.emit('bookingUpdated', booking);
-
   await db.query("INSERT INTO notifications (receiver_id, role, message, related_user_id) VALUES ($1, 'user', $2, $3)", [
     booking.user_id,
     `Your service has been completed successfully by ${req.user.name}`,
@@ -363,10 +355,6 @@ app.post("/cancel-order", async function (req, res) {
   const result = await db.query("SELECT * FROM bookings WHERE id = $1", [orderId]);
   const booking = result.rows[0];
   const taskerId = booking.tasker_id;
-
-  // Emit real-time update
-  const io = req.app.get('io');
-  io.emit('bookingUpdated', booking);
 
   await db.query("INSERT INTO notifications (receiver_id, role, message,related_user_id) VALUES ($1, 'tasker', $2, $3)", [
     taskerId,
@@ -1280,6 +1268,6 @@ app.get("/admin/payments", async (req, res) => {
 
 
 
-server.listen(port, () => {
+app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
