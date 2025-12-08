@@ -55,7 +55,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(cors({
-  origin: "http://localhost:3001", 
+  origin: ["http://localhost:3001", "https://home-service-booking-platform-frontend-9bvu.onrender.com"],
   credentials: true, 
 }));
 app.use(express.json());
